@@ -12,7 +12,7 @@ LegacyInstruction::LegacyInstruction() :
  * Initializes Legacy prefixes.  
  *
  * Note: The "magic" hexadecimal values used here are referenced from the AMD64 manual
- *
+ */
 void LegacyInstruction::SetLegacyPrefix(bool operand_size_override_prefix, bool address_size_override_prefix, SegmentOverridePrefix segment_override_prefix, bool lock_prefix, RepeatPrefix repeat_prefix){
     // AMD64 legacy prefixes can be encoded without order
     if(operand_size_override_prefix){
@@ -94,7 +94,7 @@ void LegacyInstruction::SetRexPrefix(bool rex_w, bool rex_r, bool rex_x, bool re
  * Initializes Escape prefixes.  
  *
  * Note: The "magic" hexadecimal values used here are referenced from the AMD64 manual
- *
+ */
 void LegacyInstruction::SetEscapeSequence(EscapeSequence escseq){
     switch(escseq){
         case EscapeSequence::PRIMARY:
@@ -116,7 +116,7 @@ void LegacyInstruction::SetEscapeSequence(EscapeSequence escseq){
  * Encodes operation into an internal representation and maps AMD64 opcode.
  *
  * Note: The "magic" hexadecimal values used here are referenced from the AMD64 manual
- *
+ */
 void LegacyInstruction::SetOpcode(struct Operation operation){
     // the operation/cpu instruction byte is placed at the most significant byte position (8th byte)
     uint64_t encoded_operation = static_cast<uint64_t>(operation.cpu_instruction) << 56;
