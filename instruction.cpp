@@ -69,7 +69,7 @@ void LegacyInstruction::SetLegacyPrefix(bool operand_size_override_prefix, bool 
  * Initializes REX prefixes.  
  *
  * Note: The "magic" hexadecimal values used here are referenced from the AMD64 manual
- *
+ */
 void LegacyInstruction::SetRexPrefix(bool rex_w, bool rex_r, bool rex_x, bool rex_b){
     this->rex = 0x40;
 
