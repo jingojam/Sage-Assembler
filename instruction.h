@@ -197,9 +197,9 @@ class LegacyInstruction{
 
         ~LegacyInstruction();
 
-        void SetLegacyPrefix(bool operand_size_override_prefix, bool address_size_override_prefix, SegmentOverridePrefix segment_override_prefix, bool lock_prefix, RepeatPrefix repeat_prefix);
+        void SetLegacyPrefix(uint8_t legacy_prefix_flags);
 
-        void SetRexPrefix(bool rex_w, bool rex_r, bool rex_x, bool rex_b);
+        void SetRexPrefix(uint8_t rex_flags);
 
         void SetEscapeSequence(EscapeSequence escseq);
 
