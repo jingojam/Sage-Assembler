@@ -13,55 +13,38 @@ LegacyInstruction::LegacyInstruction() :
  *
  * Note: The "magic" hexadecimal values used here are referenced from the AMD64 manual
  */
-void LegacyInstruction::SetLegacyPrefix(bool operand_size_override_prefix, bool address_size_override_prefix, SegmentOverridePrefix segment_override_prefix, bool lock_prefix, RepeatPrefix repeat_prefix){
+void LegacyInstruction::SetLegacyPrefix(uint8_t legacy_prefix_flags){
     // AMD64 legacy prefixes can be encoded without order
-    if(operand_size_override_prefix){
-        this->legacy[0] = 0x66;
+    if(legacy_prefix_flags & OPERAND_SIZE_OVERRIDE_FLAG){
+        this->legacy[0] = OPERAND_SIZE_OVERRIDE;
     }
 
-    if(address_size_override_prefix){
-        this->legacy[1] = 0x67;
+    if(legacy_prefix_flags & ADDRESS_SIZE_OVERRIDE_FLAG){
+        this->legacy[1] = ADDRESS_SIZE_OVERRIDE;
     }
 
-    switch(segment_override_prefix){
-        case SegmentOverridePrefix::CS:
-            this->legacy[2] = 0x2e;
-            break;
-        case SegmentOverridePrefix::DS:
-            this->legacy[2] = 0x3e;
-            break;
-        case SegmentOverridePrefix::ES:
-            this->legacy[2] = 0x26;
-            break;
-        case SegmentOverridePrefix::FS:
-            this->legacy[2] = 0x64;
-            break;
-        case SegmentOverridePrefix::GS:
-            this->legacy[2] = 0x65;
-            break;
-        case SegmentOverridePrefix::SS:
-            this->legacy[2] = 0x36;
-            break;
-        default:
-            this->legacy[2] = 0x00
-            break;
+    if(legacy_prefix_flags & LOCK){
+        this->legacy[2] = LOCK;
     }
 
-    if(lock_prefix){
-        this->legacy[3] = 0xf0;
+    if(legacy_prefix_flags & REP_FLAG || legacy_prefix_flags & REPEZ_FLAG){
+        this->legacy[3] = REPEZ;
+    } else if(legacy_prefix_flags & REPNEZ_FLAG){
+        this->legacy[3] = REPNEZ;
     }
 
-    switch(repeat_prefix){
-        case RepeatPrefix::REP:
-        case RepeatPrefix::REPEZ:
-            this->legacy[4] = 0xf3;
-            break;
-        case RepeatPrefix::REPNEZ:
-            this->legacy[4] = 0xf2;
-            break;
-        default:
-            this->legacy[4] = 0x00;
-            break;
+    if(legacy_prefix_flags & SEGMENT_OVERRIDE_CS_FLAG){
+        this->legacy[4] = SEGMENT_OVERRIDE_CS;
+    } else if(legacy_prefix_flags & SEGMENT_OVERRIDE_DS_FLAG){
+        this->legacy[4] = SEGMENT_OVERRIDE_DS;
+    } else if(legacy_prefix_flags & SEGMENT_OVERRIDE_ES_FLAG){
+        this->legacy[4] = SEGMENT_OVERRIDE_ES;
+    } else if(legacy_prefix_flags & SEGMENT_OVERRIDE_FS_FLAG){
+        this->legacy[4] = SEGMENT_OVERRIDE_FS;
+    } else if(legacy_prefix_flags & SEGMENT_OVERRIDE_GS_FLAG){
+        this->legacy[4] = SEGMENT_OVERRIDE_GS;
+    } else if(legacy_prefix_flags & SEGMENT_OVERRIDE_SS_FLAG){
+        this->legacy[4] = SEGMENT_OVERRIDE_SS;
     }
 }
 
@@ -70,24 +53,8 @@ void LegacyInstruction::SetLegacyPrefix(bool operand_size_override_prefix, bool 
  *
  * Note: The "magic" hexadecimal values used here are referenced from the AMD64 manual
  */
-void LegacyInstruction::SetRexPrefix(bool rex_w, bool rex_r, bool rex_x, bool rex_b){
-    this->rex = 0x40;
-
-    if(rex_w){
-        this->rex = this->rex | 0x08;
-    }
-    
-    if(rex_r){
-        this->rex = this->rex | 0x04;
-    }
-
-    if(rex_x){
-        this->rex = this->rex | 0x02;
-    }
-
-    if(rex_b){
-        this->rex = this->rex | 0x01;
-    }
+void LegacyInstruction::SetRexPrefix(uint8_t rex_flags){
+    this->rex = REX_MS_NIBBLE | rex_flags; 
 }
 
 /**
@@ -96,20 +63,7 @@ void LegacyInstruction::SetRexPrefix(bool rex_w, bool rex_r, bool rex_x, bool re
  * Note: The "magic" hexadecimal values used here are referenced from the AMD64 manual
  */
 void LegacyInstruction::SetEscapeSequence(EscapeSequence escseq){
-    switch(escseq){
-        case EscapeSequence::PRIMARY:
-            this->escseq = 0x0f0f;
-            break;
-        case EscapeSequence::EXT0SSE:
-            this->escseq = 0x380f;
-            break;
-        case EscapeSequence::EXT1SSE:
-            this->escseq = 0x3a0f;
-            break;
-        default:
-            this->escseq = 0;
-            break;
-    }
+    this->escseq = static_cast<uint16_t>(escseq);
 }
 
 /**

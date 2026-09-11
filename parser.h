@@ -14,14 +14,25 @@
  * Publication No. 40332, Revision 1.0, July 2026
  */
 
+struct Instruction{
+    uint64_t line_number;
+    LegacyInstruction instruction;
+    std::string label; 
+};
+
+
+
 class Parser{
     private:
-        std::vector<LegacyInstruction> instruction_stream;
+        std::vector<struct Instruction> instruction_stream;
 
     public:
         Parser();
 
-        ~Parser();
+        void Parse(const std::string input_program)
+
+        // Sets format for PE/ELF exeutables
+        void SetFormat(const std::string format);
 };
 
 #endif
