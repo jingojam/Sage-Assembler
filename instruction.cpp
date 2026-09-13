@@ -67,28 +67,10 @@ void LegacyInstruction::SetEscapeSequence(EscapeSequence escseq){
 }
 
 /**
- * Encodes operation into an internal representation and maps AMD64 opcode.
+ * Encodes operation into an internal representation and extracts AMD64 opcode.
  *
  * Note: The "magic" hexadecimal values used here are referenced from the AMD64 manual
  */
-void LegacyInstruction::SetOpcode(struct Operation operation){
-    // the operation/cpu instruction byte is placed at the most significant byte position (8th byte)
-    uint64_t encoded_operation = static_cast<uint64_t>(operation.cpu_instruction) << 56;
+void LegacyInstruction::SetOpcode(uint32_t operation){
 
-    // then encode every operand in the instruction from left to right (by order of parsing)
-    for(size_t i = 0; i < operation.operands.size(); i++){
-        uint64_t operand = static_cast<uint8_t>(operation.operands[i])
-
-        // starting from the 48th bit (6th byte) down to the 0th bit (1st byte)
-        encoded_operation = (encoded_operation | operand) << (48 - (i*8));
-    }
-
-    auto it = PRIMARY_OPCODE_MAP.find(encoded_operation);
-
-    if(it != PRIMARY_OPCODE_MAP.end()){
-        this->op = it->second;
-    } else{
-        // FUture ref: push an error to a global error buffer
-        return;
-    }
 }

@@ -20,19 +20,14 @@ struct Instruction{
     std::string label; 
 };
 
-
-
 class Parser{
-    private:
+    protected:
         std::vector<struct Instruction> instruction_stream;
 
     public:
         Parser();
 
-        void Parse(const std::string input_program)
-
-        // Sets format for PE/ELF exeutables
-        void SetFormat(const std::string format);
+        void Parse(const std::string input_program);
 };
 
 #endif

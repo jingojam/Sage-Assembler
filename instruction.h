@@ -93,6 +93,33 @@ enum class EscapeSequence{
 };
 
 /**
+ * Mapping scheme for (internally represented) encoded operations to the primary/secondary opcode map
+ *
+ * Bit fields:
+ *  Bits 0-7: Source Operand Field
+ *  Bits 8-15: Destination Operand Field
+ *  Bits 16-31: CPU Instruction Opcode Mapping
+ * The source and destination operand bit fields are ignored for instructions that does not require an operand 
+ *
+ * For example, the assembly instructions: 
+ *  add rax, rbx
+ *  inc rax
+ *  syscall
+ *
+ * will be represented, respectively, as:
+ *  ADD (CpuInstruction::ADD) RAX (REG_64_D), RBX (RBX_64_S)
+ *  INC (CpuInstruction::INC) RAX (REG_64_D)
+ *  SYSCALL (CpuInstruction::SYSCALL)
+ * 
+ * And encoded as:
+ *  00 00 19 0a
+ *  00 ff 19 00
+ *  0f 05 00 00
+ *
+ */
+
+
+/**
  * AMD64 instruction operand types
  */
 enum class OperandType{
@@ -142,7 +169,7 @@ enum class OperandType{
 /** 
  * CPU instructions mapped to amd64 primary opcode map (high nibble)
  */
-enum class CpuInstruction : unsigned int {
+enum class CpuInstruction : uint16_t{
     /** 2-Operand Fundamental Arithmetic Ops (Reg/Mem to/from Reg) */
     ADD = 0x01,  // ADD Ev, Gv
     ADC = 0x11,  // ADC Ev, Gv
@@ -163,6 +190,10 @@ enum class CpuInstruction : unsigned int {
     /** 1-Operand Bit Ops */
     NOT = 0xf7,  // Uses /2 ModR/M extension
     NEG = 0xf7,  // Uses /3 ModR/M extension
+    // SHL
+    // SHR
+    // RTR
+    // RTL
 
     /** Data Transfer */
     PUSH_GPR = 0x50,   // Base for PUSH r64 (0x50 + reg_id)
@@ -223,24 +254,8 @@ enum class CpuInstruction : unsigned int {
  */
 struct Operation{
     CpuInstruction cpu_instruction;
-    vector<OperandType> operands; // depending on instruction, operation can have 0-5 operands
+    uint8_t operands[2]; // depending on instruction, operation can have 0-2 operands
 };
-
-/**
- * Mapping scheme for (internally represented) encoded operations to the primary/secondary opcode map
- *
- * Bit fields:
- *  Bits 0-7: Source Operand Field
- *  Bits 8-15: Destination Operand Field
- *  Bits 16-31: CPU Instruction Opcode Mapping
- *
- * For example, the assembly instruction add rax, rbx will be represented as:
- *  ADD (CpuInstruction::ADD) RAX (REG_64_D), RBX (RBX_64_S)
- * 
- * And encoded as:
- *  00 00 19 0a
- */
-
 
 /** 
  * Legacy x86_64 instruction encoding fields
@@ -250,7 +265,7 @@ class LegacyInstruction{
         std::array<uint8_t, 5> legacy; // 0-5 legacy prefixes
         uint8_t rex;                   // REX prefix
         uint16_t escseq;               // Escape sequence bytes
-        uint8_t op;                    // opcode
+        uint16_t op;                    // opcode
         uint8_t modrm;                 // ModR/M 
         uint8_t sib;                   // SIB bytes
         int64_t disp;                  // Displacement
@@ -267,7 +282,7 @@ class LegacyInstruction{
 
         void SetEscapeSequence(EscapeSequence escseq);
 
-        void SetOpcode(struct Operation operation);
+        void SetOpcode(uint32_t operation);
 };
 
 #endif
