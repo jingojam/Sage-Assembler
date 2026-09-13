@@ -7,7 +7,7 @@
 #include <string>
 #include <cstdint>
 #include <unordered_map>
-#include "instruction.h"
+#include "instruction.hpp"
 
 /**
  * Reference: AMD64 Technology, AMD64 Architecture Programmer's Manual Volumes 1-5

@@ -2,8 +2,8 @@
 #define ASSEMBLER_H
 
 #include <string.h>
-#include "instruction.h"
-#include "parser.h"
+#include "instruction.hpp"
+#include "parser.hpp"
 
 class Assembler : public Parser{
     public:

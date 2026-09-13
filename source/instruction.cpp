@@ -1,4 +1,4 @@
-#include "instruction.h"
+#include "../headers/instruction.hpp"
 
 /**
  * Default constructor
