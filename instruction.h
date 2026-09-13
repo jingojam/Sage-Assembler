@@ -12,7 +12,7 @@
  */
 
 /**
- * AMD64 legacy prefix flags
+ * AMD64 legacy prefix representation flags
  * 
  * Flags:
  *   16 bits wide, most significant nibble ignored (x)
@@ -35,17 +35,17 @@ inline static uint16_t ADDRESS_SIZE_OVERRIDE_FLAG = 0x0002;
 inline static uint16_t LOCK_FLAG                  = 0x0004;
 
 // REPEAT prefix flags (mutually exclusive)
-inline static uint16_t REP_FLAG                   = 0x0008;
-inline static uint16_t REPEZ_FLAG                 = 0x0010;
-inline static uint16_t REPNEZ_FLAG                = 0x0020;
+inline static uint16_t REP_FLAG    = 0x0008;
+inline static uint16_t REPEZ_FLAG  = 0x0010;
+inline static uint16_t REPNEZ_FLAG = 0x0020;
 
 // SEGMENT prefix flags (mutually exclusive)
-inline static uint16_t SEGMENT_OVERRIDE_CS_FLAG   = 0x0040;
-inline static uint16_t SEGMENT_OVERRIDE_DS_FLAG   = 0x0080; 
-inline static uint16_t SEGMENT_OVERRIDE_ES_FLAG   = 0x0100;
-inline static uint16_t SEGMENT_OVERRIDE_FS_FLAG   = 0x0200;
-inline static uint16_t SEGMENT_OVERRIDE_GS_FLAG   = 0x0400; 
-inline static uint16_t SEGMENT_OVERRIDE_SS_FLAG   = 0x0800;
+inline static uint16_t SEGMENT_OVERRIDE_CS_FLAG = 0x0040;
+inline static uint16_t SEGMENT_OVERRIDE_DS_FLAG = 0x0080; 
+inline static uint16_t SEGMENT_OVERRIDE_ES_FLAG = 0x0100;
+inline static uint16_t SEGMENT_OVERRIDE_FS_FLAG = 0x0200;
+inline static uint16_t SEGMENT_OVERRIDE_GS_FLAG = 0x0400; 
+inline static uint16_t SEGMENT_OVERRIDE_SS_FLAG = 0x0800;
 
 /**
  * AMD64 Legacy prefix bytes
@@ -76,11 +76,11 @@ inline static uint8_t SEGMENT_OVERRIDE_SS   = 0x36;
  *   0100   0100
  *   0100   1000
  */
-inline static uint8_t REX_MS_NIBBLE   = 0x40;
-inline static uint8_t REX_B           = 0x01;
-inline static uint8_t REX_X           = 0x02;
-inline static uint8_t REX_R           = 0x04;
-inline static uint8_t REX_W           = 0x08;
+inline static uint8_t REX_MS_NIBBLE = 0x40;
+inline static uint8_t REX_B         = 0x01;
+inline static uint8_t REX_X         = 0x02;
+inline static uint8_t REX_R         = 0x04;
+inline static uint8_t REX_W         = 0x08;
 
 /**
  * AMD64 escape sequences
@@ -97,66 +97,129 @@ enum class EscapeSequence{
  */
 enum class OperandType{
     /**Source Immediate/constants */
-    IMM_64_S   = 0,   // 64-bit
-    IMM_32_S   = 1,   // 32-bit
-    IMM_16_S   = 2,   // 16-bit
-    IMM_8_S    = 3,    // 8-bit
-    IMM_GE16_S = 4, // variable (>=16-bit)
+    IMM_64_S   = 0x00,
+    IMM_32_S   = 0x01,
+    IMM_16_S   = 0x02,
+    IMM_8_S    = 0x03,
+    IMM_V16_S  = 0x04,
     
     /**Source Memory operands */
-    MEM_64_S  = 5,
-    MEM_32_S  = 6,
-    MEM_16_S  = 7,
-    MEM_8_S   = 8,
-    MEM_V16_S = 9,
+    MEM_64_S  = 0x05,
+    MEM_32_S  = 0x06,
+    MEM_16_S  = 0x07,
+    MEM_8_S   = 0x08,
+    MEM_V16_S = 0x09,
 
     /**Source CPU GPR (General Purpose Register) operands */
-    REG_64_S  = 10,
-    REG_32_S  = 11, 
-    REG_16_S  = 12,
-    REG_8_S   = 13,
-    REG_V16_S = 14,
+    REG_64_S  = 0x0a,
+    REG_32_S  = 0x0b, 
+    REG_16_S  = 0x0c,
+    REG_8_S   = 0x0d,
+    REG_V16_S = 0x0e,
 
     /**Destination Immediate/constants */
-    IMM_64_D  = 15,
-    IMM_32_D  = 16,
-    IMM_16_D  = 17,
-    IMM_8_D   = 18,
-    IMM_V16_D = 19,
+    IMM_64_D  = 0x0f,
+    IMM_32_D  = 0x10,
+    IMM_16_D  = 0x11,
+    IMM_8_D   = 0x12,
+    IMM_V16_D = 0x13,
 
     /**Destination Memory operands */
-    MEM_64_D  = 20,
-    MEM_32_D  = 21,
-    MEM_16_D  = 22,
-    MEM_8_D   = 23,
-    MEM_V16_D = 24,
+    MEM_64_D  = 0x14,
+    MEM_32_D  = 0x15,
+    MEM_16_D  = 0x16,
+    MEM_8_D   = 0x17,
+    MEM_V16_D = 0x18,
 
     /**Destination CPU GPR (General Purpose Register) operands */
-    REG_64_D  = 25,
-    REG_32_D  = 26,
-    REG_16_D  = 27,
-    REG_8_D   = 28,
-    REG_V16_D = 29
+    REG_64_D  = 0x19,
+    REG_32_D  = 0x1a,
+    REG_16_D  = 0x1b,
+    REG_8_D   = 0x1c,
+    REG_V16_D = 0x1d
 };
 
 /** 
- * CPU instructions mapped to x86-64 primary opcode map (high nibble)
+ * CPU instructions mapped to amd64 primary opcode map (high nibble)
  */
-enum class CpuInstruction{
-    ADD = 0x00,
-    ADC = 0x01,
-    AND = 0x02,
-    XOR = 0x03,
-    INC = 0x04, 
-    PUSH = 0x05,
-    JMP_CND = 0x07,
-    MOV0 = 0x0a,
-    MOV1 = 0x0b,
-    SUB = 0x20
+enum class CpuInstruction : unsigned int {
+    /** 2-Operand Fundamental Arithmetic Ops (Reg/Mem to/from Reg) */
+    ADD = 0x01,  // ADD Ev, Gv
+    ADC = 0x11,  // ADC Ev, Gv
+    SUB = 0x29,  // SUB Ev, Gv
+
+    /** 1-Operand Arithmetic Ops */
+    IMUL = 0x0faf, // 2-byte Near Multi-operand IMUL (0x0F 0xAF)
+    IDIV = 0xf7,
+    MUL  = 0xf7,
+    DIV  = 0xf7,
+    INC  = 0xff,   // ModR/M form mandatory for AMD64 (uses /0 extension)
+
+    /** 2-Operand Bit Ops */
+    OR  = 0x09,  // OR Ev, Gv
+    AND = 0x21,  // AND Ev, Gv
+    XOR = 0x31,  // XOR Ev, Gv
+
+    /** 1-Operand Bit Ops */
+    NOT = 0xf7,  // Uses /2 ModR/M extension
+    NEG = 0xf7,  // Uses /3 ModR/M extension
+
+    /** Data Transfer */
+    PUSH_GPR = 0x50,   // Base for PUSH r64 (0x50 + reg_id)
+    POP_GPR  = 0x58,   // Base for POP r64 (0x58 + reg_id)
+    LEA      = 0x8d,   // LEA Gv, M
+    MOV_GPR  = 0x89,   // MOV Ev, Gv (Register/Memory to Register)
+    MOV_IMM  = 0xb8,   // Base for MOV r64, imm64 (0xB8 + reg_id)
+
+    /** Conditions */
+    CMP = 0x39,  // CMP Ev, Gv
+
+    /** Control Flow */
+    CALL = 0xe8,  // CALL rel32
+    RET  = 0xc3,
+
+    /** SHort Jumps (8-bit relative displacement) */
+    JO   = 0x70, // Jump if Overflow (OF=1)
+    JNO  = 0x71, // Jump if Not Overflow (OF=0)
+    JB   = 0x72, // Jump if Below / Carry / Not Above or Equal (CF=1) -> Unsigned <
+    JAE  = 0x73, // Jump if Above or Equal / Not Below / No Carry (CF=0) -> Unsigned >=
+    JE   = 0x74, // Jump if Equal / Zero (ZF=1) -> ==
+    JNE  = 0x75, // Jump if Not Equal / Not Zero (ZF=0) -> !=
+    JBE  = 0x76, // Jump if Below or Equal / Not Above (CF=1 or ZF=1) -> Unsigned <=
+    JA   = 0x77, // Jump if Above / Not Below or Equal (CF=0 and ZF=0) -> Unsigned >
+    JS   = 0x78, // Jump if Sign / Negative (SF=1)
+    JNS  = 0x79, // Jump if Not Sign / Positive (SF=0)
+    JP   = 0x7a, // Jump if Parity / Parity Even (PF=1)
+    JNP  = 0x7b, // Jump if Not Parity / Parity Odd (PF=0)
+    JL   = 0x7c, // Jump if Less / Not Greater or Equal (SF != OF) -> Signed <
+    JGE  = 0x7d, // Jump if Greater or Equal / Not Less (SF == OF) -> Signed >=
+    JLE  = 0x7e, // Jump if Less or Equal / Not Greater (ZF=1 or SF != OF) -> Signed <=
+    JG   = 0x7f, // Jump if Greater / Not Less or Equal (ZF=0 and SF == OF
+
+    /** Near Jumps (32-bit relative displacement alternatives) */
+    JO_NEAR  = 0x0F80,
+    JNO_NEAR = 0x0F81,
+    JB_NEAR  = 0x0F82,
+    JAE_NEAR = 0x0F83,
+    JE_NEAR  = 0x0F84,
+    JNE_NEAR = 0x0F85,
+    JBE_NEAR = 0x0F86,
+    JA_NEAR  = 0x0F87,
+    JS_NEAR  = 0x0F88,
+    JNS_NEAR = 0x0F89,
+    JP_NEAR  = 0x0F8a,
+    JNP_NEAR = 0x0F8b,
+    JL_NEAR  = 0x0F8c,
+    JGE_NEAR = 0x0F8d,
+    JLE_NEAR = 0x0F8e,
+    JG_NEAR  = 0x0F8f
+
+    /** Syscall */
+    SYSCALL = 0x0f05  // Native x86 instruction order (0x0F, 0x05)
 };
 
 /**
- * Primary structural representation of an x86-64 instruction operation
+ * Primary structural representation of an amd64 instruction operation
  */
 struct Operation{
     CpuInstruction cpu_instruction;
@@ -164,19 +227,20 @@ struct Operation{
 };
 
 /**
- * Mapping for (internally) encoded operations to the primary opcode map
+ * Mapping scheme for (internally represented) encoded operations to the primary/secondary opcode map
+ *
+ * Bit fields:
+ *  Bits 0-7: Source Operand Field
+ *  Bits 8-15: Destination Operand Field
+ *  Bits 16-31: CPU Instruction Opcode Mapping
+ *
+ * For example, the assembly instruction add rax, rbx will be represented as:
+ *  ADD (CpuInstruction::ADD) RAX (REG_64_D), RBX (RBX_64_S)
+ * 
+ * And encoded as:
+ *  00 00 19 0a
  */
-inline static std::unordered_map<uint64_t, uint8_t> PRIMARY_OPCODE_MAP = {
-    /**ADD MEM_8_D, REG_8_S */
-    {(static_cast<uint64_t>(CpuInstruction::ADD)  << 56) |
-     (static_cast<uint64_t>(OperandType::MEM_8_D) << 48) |
-     (static_cast<uint64_t>(OperandType::REG_8_S) << 40), 0x00},
 
-    /**ADD REG_8_D, REG_8_S */
-    {(static_cast<uint64_t>(CpuInstruction::ADD)  << 56) |
-     (static_cast<uint64_t>(OperandType::REG_8_D) << 48) |
-     (static_cast<uint64_t>(OperandType::REG_8_S) << 40), 0x00},
-};
 
 /** 
  * Legacy x86_64 instruction encoding fields
