@@ -5,6 +5,7 @@
 #include <string>
 #include <array>
 #include <cstdint>
+#include <optional>
 
 /**
  * Reference: AMD64 Technology, AMD64 Architecture Programmer's Manual Volumes 1-5
@@ -30,38 +31,38 @@
  *   xxxx 0100 0000 0000 SEGMENT_OVERRIDE (GS)
  *   xxxx 1000 0000 0000 SEGMENT_OVERRIDE (SS)
  */
-inline static uint16_t OPERAND_SIZE_OVERRIDE_FLAG = 0x0001;
-inline static uint16_t ADDRESS_SIZE_OVERRIDE_FLAG = 0x0002;
-inline static uint16_t LOCK_FLAG                  = 0x0004;
+static constexpr uint16_t OPERAND_SIZE_OVERRIDE_FLAG = 0x0001;
+static constexpr uint16_t ADDRESS_SIZE_OVERRIDE_FLAG = 0x0002;
+static constexpr uint16_t LOCK_FLAG                  = 0x0004;
 
 // REPEAT prefix flags (mutually exclusive)
-inline static uint16_t REP_FLAG    = 0x0008;
-inline static uint16_t REPEZ_FLAG  = 0x0010;
-inline static uint16_t REPNEZ_FLAG = 0x0020;
+static constexpr uint16_t REP_FLAG    = 0x0008;
+static constexpr uint16_t REPEZ_FLAG  = 0x0010;
+static constexpr uint16_t REPNEZ_FLAG = 0x0020;
 
 // SEGMENT prefix flags (mutually exclusive)
-inline static uint16_t SEGMENT_OVERRIDE_CS_FLAG = 0x0040;
-inline static uint16_t SEGMENT_OVERRIDE_DS_FLAG = 0x0080; 
-inline static uint16_t SEGMENT_OVERRIDE_ES_FLAG = 0x0100;
-inline static uint16_t SEGMENT_OVERRIDE_FS_FLAG = 0x0200;
-inline static uint16_t SEGMENT_OVERRIDE_GS_FLAG = 0x0400; 
-inline static uint16_t SEGMENT_OVERRIDE_SS_FLAG = 0x0800;
+static constexpr uint16_t SEGMENT_OVERRIDE_CS_FLAG = 0x0040;
+static constexpr uint16_t SEGMENT_OVERRIDE_DS_FLAG = 0x0080; 
+static constexpr uint16_t SEGMENT_OVERRIDE_ES_FLAG = 0x0100;
+static constexpr uint16_t SEGMENT_OVERRIDE_FS_FLAG = 0x0200;
+static constexpr uint16_t SEGMENT_OVERRIDE_GS_FLAG = 0x0400; 
+static constexpr uint16_t SEGMENT_OVERRIDE_SS_FLAG = 0x0800;
 
 /**
  * AMD64 Legacy prefix bytes
  */
-inline static uint8_t OPERAND_SIZE_OVERRIDE = 0x66;
-inline static uint8_t ADDRESS_SIZE_OVERRIDE = 0x67;
-inline static uint8_t LOCK                  = 0xf0;
-inline static uint8_t REP                   = 0xf3;
-inline static uint8_t REPEZ                 = 0xf3;
-inline static uint8_t REPNEZ                = 0xf2;
-inline static uint8_t SEGMENT_OVERRIDE_CS   = 0x2e;
-inline static uint8_t SEGMENT_OVERRIDE_DS   = 0x3e; 
-inline static uint8_t SEGMENT_OVERRIDE_ES   = 0x26;
-inline static uint8_t SEGMENT_OVERRIDE_FS   = 0x64;
-inline static uint8_t SEGMENT_OVERRIDE_GS   = 0x65; 
-inline static uint8_t SEGMENT_OVERRIDE_SS   = 0x36;
+static constexpr uint8_t OPERAND_SIZE_OVERRIDE = 0x66;
+static constexpr uint8_t ADDRESS_SIZE_OVERRIDE = 0x67;
+static constexpr uint8_t LOCK                  = 0xf0;
+static constexpr uint8_t REP                   = 0xf3;
+static constexpr uint8_t REPEZ                 = 0xf3;
+static constexpr uint8_t REPNEZ                = 0xf2;
+static constexpr uint8_t SEGMENT_OVERRIDE_CS   = 0x2e;
+static constexpr uint8_t SEGMENT_OVERRIDE_DS   = 0x3e; 
+static constexpr uint8_t SEGMENT_OVERRIDE_ES   = 0x26;
+static constexpr uint8_t SEGMENT_OVERRIDE_FS   = 0x64;
+static constexpr uint8_t SEGMENT_OVERRIDE_GS   = 0x65; 
+static constexpr uint8_t SEGMENT_OVERRIDE_SS   = 0x36;
 
 
 /**
@@ -76,11 +77,11 @@ inline static uint8_t SEGMENT_OVERRIDE_SS   = 0x36;
  *   0100   0100
  *   0100   1000
  */
-inline static uint8_t REX_MS_NIBBLE = 0x40;
-inline static uint8_t REX_B         = 0x01;
-inline static uint8_t REX_X         = 0x02;
-inline static uint8_t REX_R         = 0x04;
-inline static uint8_t REX_W         = 0x08;
+static constexpr uint8_t REX_MS_NIBBLE = 0x40;
+static constexpr uint8_t REX_B         = 0x01;
+static constexpr uint8_t REX_X         = 0x02;
+static constexpr uint8_t REX_R         = 0x04;
+static constexpr uint8_t REX_W         = 0x08;
 
 /**
  * AMD64 escape sequences
@@ -192,8 +193,8 @@ enum class CpuInstruction : uint16_t{
     NEG = 0xf7,  // Uses /3 ModR/M extension
     // SHL
     // SHR
-    // RTR
-    // RTL
+    // ROR
+    // ROL
 
     /** Data Transfer */
     PUSH_GPR = 0x50,   // Base for PUSH r64 (0x50 + reg_id)
@@ -228,25 +229,25 @@ enum class CpuInstruction : uint16_t{
     JG   = 0x7f, // Jump if Greater / Not Less or Equal (ZF=0 and SF == OF
 
     /** Near Jumps (32-bit relative displacement alternatives) */
-    JO_NEAR  = 0x0F80,
-    JNO_NEAR = 0x0F81,
-    JB_NEAR  = 0x0F82,
-    JAE_NEAR = 0x0F83,
-    JE_NEAR  = 0x0F84,
-    JNE_NEAR = 0x0F85,
-    JBE_NEAR = 0x0F86,
-    JA_NEAR  = 0x0F87,
-    JS_NEAR  = 0x0F88,
-    JNS_NEAR = 0x0F89,
-    JP_NEAR  = 0x0F8a,
-    JNP_NEAR = 0x0F8b,
-    JL_NEAR  = 0x0F8c,
-    JGE_NEAR = 0x0F8d,
-    JLE_NEAR = 0x0F8e,
-    JG_NEAR  = 0x0F8f
+    JO_NEAR  = 0x0f80,
+    JNO_NEAR = 0x0f81,
+    JB_NEAR  = 0x0f82,
+    JAE_NEAR = 0x0f83,
+    JE_NEAR  = 0x0f84,
+    JNE_NEAR = 0x0f85,
+    JBE_NEAR = 0x0f86,
+    JA_NEAR  = 0x0f87,
+    JS_NEAR  = 0x0f88,
+    JNS_NEAR = 0x0f89,
+    JP_NEAR  = 0x0f8a,
+    JNP_NEAR = 0x0f8b,
+    JL_NEAR  = 0x0f8c,
+    JGE_NEAR = 0x0f8d,
+    JLE_NEAR = 0x0f8e,
+    JG_NEAR  = 0x0f8f,
 
     /** Syscall */
-    SYSCALL = 0x0f05  // Native x86 instruction order (0x0F, 0x05)
+    SYSCALL = 0x0f05,  // Native x86 instruction order (0x0F, 0x05)
 };
 
 /**
@@ -262,6 +263,7 @@ struct Operation{
  */
 class LegacyInstruction{
     private:
+        uint8_t flags;
         std::array<uint8_t, 5> legacy; // 0-5 legacy prefixes
         uint8_t rex;                   // REX prefix
         uint16_t escseq;               // Escape sequence bytes
@@ -269,7 +271,7 @@ class LegacyInstruction{
         uint8_t modrm;                 // ModR/M 
         uint8_t sib;                   // SIB bytes
         int64_t disp;                  // Displacement
-        uint64_t imm;                  // Immediate
+        int32_t imm;                  // Immediate
 
     public:
         LegacyInstruction();

@@ -4,7 +4,7 @@
  * Default constructor
  */
 LegacyInstruction::LegacyInstruction() : 
-    legacy() {}, rex(0), escseq(0), op(0), modrm(0), sib(0), disp(0), imm(0)
+    flags(0), legacy() {}, rex(0), escseq(0), op(0), modrm(0), sib(0), disp(0), imm(0)
     {}
 
 
@@ -71,6 +71,6 @@ void LegacyInstruction::SetEscapeSequence(EscapeSequence escseq){
  *
  * Note: The "magic" hexadecimal values used here are referenced from the AMD64 manual
  */
-void LegacyInstruction::SetOpcode(uint32_t operation){
-
+void LegacyInstruction::SetOpcode(uint32_t op){
+    this->op = op;
 }
