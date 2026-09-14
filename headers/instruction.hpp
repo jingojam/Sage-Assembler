@@ -15,6 +15,9 @@
 /**
  * AMD64 legacy prefix representation flags
  * 
+ * These are flag bytes to represent mutually inclusive legacy prefixes,
+ * which is part of SageAMD64 IR in signalling presence of such prefixes in encoding
+ *
  * Flags:
  *   16 bits wide, most significant nibble ignored (x)
  *   xxxx 0000 0000 0000 NONE
@@ -50,6 +53,9 @@ static constexpr uint16_t SEGMENT_OVERRIDE_SS_FLAG = 0x0800;
 
 /**
  * AMD64 Legacy prefix bytes
+ *
+ * In contrast to the flags above, these bytes represent
+ * actual values mapped from AMD64 specifications
  */
 static constexpr uint8_t OPERAND_SIZE_OVERRIDE = 0x66;
 static constexpr uint8_t ADDRESS_SIZE_OVERRIDE = 0x67;
@@ -68,6 +74,8 @@ static constexpr uint8_t SEGMENT_OVERRIDE_SS   = 0x36;
 /**
  * AMD64 REX prefix bytes
  *
+ * These bytes represent the actual REX prefix fields in AMD64
+ * 
  * Flags:
  *   8 bits wide, most significant nibble is a constant (0x40)
  *
@@ -85,6 +93,8 @@ static constexpr uint8_t REX_W         = 0x08;
 
 /**
  * AMD64 escape sequences
+ *
+ * These bytes are mapped to actual AMD64 escape sequences for opcode maps
  */
 enum class EscapeSequence{
     NONE    = 0x0000,
@@ -122,53 +132,58 @@ enum class EscapeSequence{
 
 /**
  * AMD64 instruction operand types
+ *
+ * These bytes are part of the IR, not mapped to actual AMD64 constants
+ * OperandType provides a mapping for operands for simpler and quicker asembler passes
  */
-enum class OperandType{
+enum class OperandType : uint8_t{
     /**Source Immediate/constants */
     IMM_64_S   = 0x00,
     IMM_32_S   = 0x01,
     IMM_16_S   = 0x02,
     IMM_8_S    = 0x03,
-    IMM_V16_S  = 0x04,
+    IMM_V_S  = 0x04,
     
     /**Source Memory operands */
     MEM_64_S  = 0x05,
     MEM_32_S  = 0x06,
     MEM_16_S  = 0x07,
     MEM_8_S   = 0x08,
-    MEM_V16_S = 0x09,
+    MEM_V_S = 0x09,
 
     /**Source CPU GPR (General Purpose Register) operands */
     REG_64_S  = 0x0a,
     REG_32_S  = 0x0b, 
     REG_16_S  = 0x0c,
     REG_8_S   = 0x0d,
-    REG_V16_S = 0x0e,
+    REG_V_S = 0x0e,
 
     /**Destination Immediate/constants */
     IMM_64_D  = 0x0f,
     IMM_32_D  = 0x10,
     IMM_16_D  = 0x11,
     IMM_8_D   = 0x12,
-    IMM_V16_D = 0x13,
+    IMM_V_D = 0x13,
 
     /**Destination Memory operands */
     MEM_64_D  = 0x14,
     MEM_32_D  = 0x15,
     MEM_16_D  = 0x16,
     MEM_8_D   = 0x17,
-    MEM_V16_D = 0x18,
+    MEM_V_D = 0x18,
 
     /**Destination CPU GPR (General Purpose Register) operands */
     REG_64_D  = 0x19,
     REG_32_D  = 0x1a,
     REG_16_D  = 0x1b,
     REG_8_D   = 0x1c,
-    REG_V16_D = 0x1d
+    REG_V_D = 0x1d
 };
 
 /** 
- * CPU instructions mapped to amd64 primary opcode map (high nibble)
+ * CPU instructions mapped to AMD64 primary/secondary opcode maps
+ *
+ * These bytes correspond to actual AMD64 opcodes.
  */
 enum class CpuInstruction : uint16_t{
     /** 2-Operand Fundamental Arithmetic Ops (Reg/Mem to/from Reg) */
@@ -249,6 +264,66 @@ enum class CpuInstruction : uint16_t{
     /** Syscall */
     SYSCALL = 0x0f05,  // Native x86 instruction order (0x0F, 0x05)
 };
+
+/**
+ * AMD64 ModRM fields 
+ */
+// Mod (bits 6-7)
+static constexpr uint8_t MOD_MEMORY_ADDRESS   = 0x00;
+static constexpr uint8_t MOD8_DISPLACEMENT_MEMORY_ADDRESS = 0x01;
+static constexpr uint8_t MOD32_DISPLACEMENT_MEMORY_ADDRESS = 0x02;
+static constexpr uint8_t MOD_REGISTER_OPERAND = 0x03;
+
+// R/M
+static constexpr uint8_t RAX     = 0x00;
+static constexpr uint8_t RCX     = 0x01;
+static constexpr uint8_t RDX     = 0x02;
+static constexpr uint8_t RBX     = 0x03;
+static constexpr uint8_t AH_RSP  = 0x04;
+static constexpr uint8_t CH_RBP  = 0x05;
+static constexpr uint8_t DH_RSI  = 0x06;
+static constexpr uint8_t BH_RDI  = 0x07;
+static constexpr uint8_t RAX_RM  = 0x00;
+static constexpr uint8_t RCX_RM  = 0x01;
+static constexpr uint8_t RDX_RM  = 0x02;
+static constexpr uint8_t RBX_RM  = 0x03;
+static constexpr uint8_t HAS_SIB = 0x04;
+static constexpr uint8_t RBP_RM  = 0x05;
+static constexpr uint8_t RSI_RM  = 0x06;
+static constexpr uint8_t RDI_RM  = 0x07;
+
+/**
+ * AMD64 SIB fields
+ */
+
+// SIB scale factors
+static constexpr uint8_t SIB1_SCALE_FACTOR = 0x00; // scale 8 bits
+static constexpr uint8_t SIB2_SCALE_FACTOR = 0x01; // scale 16 bits
+static constexpr uint8_t SIB4_SCALE_FACTOR = 0x02; // scale 32 bits
+static constexpr uint8_t SIB8_SCALE_FACTOR = 0x03; // scale 64 bits
+
+// SIB index
+static constexpr uint8_t SIB_RAX_INDEX = 0x00;
+static constexpr uint8_t SIB_RCX_INDEX = 0x01;
+static constexpr uint8_t SIB_RBX_INDEX = 0x02;
+static constexpr uint8_t SIB_RDX_INDEX = 0x03;
+static constexpr uint8_t SIB_NO_INDEX  = 0x04;
+static constexpr uint8_t SIB_RBP_INDEX = 0x05;
+static constexpr uint8_t SIB_RSI_INDEX = 0x06;
+static constexpr uint8_t SIB_RDI_INDEX = 0x07;
+
+// SIB base
+static constexpr uint8_t SIB_RAX_BASE    = 0x00;
+static constexpr uint8_t SIB_RCX_BASE    = 0x01;
+static constexpr uint8_t SIB_RBX_BASE    = 0x02;
+static constexpr uint8_t SIB_RDX_BASE    = 0x03;
+static constexpr uint8_t SIB_RSP_BASE    = 0x04;
+static constexpr uint8_t SIB_RBP_NO_BASE = 0x05;
+static constexpr uint8_t SIB_RSI_BASE    = 0x06;
+static constexpr uint8_t SIB_RDI_BASE    = 0x07;
+
+// SIB base for ModRM r/m = 0x04
+
 
 /**
  * AMD64 encoding field flags
