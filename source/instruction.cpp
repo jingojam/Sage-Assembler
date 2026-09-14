@@ -14,6 +14,8 @@ LegacyInstruction::LegacyInstruction() :
  * Note: The "magic" hexadecimal values used here are referenced from the AMD64 manual
  */
 void LegacyInstruction::SetLegacyPrefix(uint8_t legacy_prefix_flags){
+    this->flags |= LEGACY_FLAG;
+
     // AMD64 legacy prefixes can be encoded without order
     if(legacy_prefix_flags & OPERAND_SIZE_OVERRIDE_FLAG){
         this->legacy[0] = OPERAND_SIZE_OVERRIDE;
@@ -54,6 +56,7 @@ void LegacyInstruction::SetLegacyPrefix(uint8_t legacy_prefix_flags){
  * Note: The "magic" hexadecimal values used here are referenced from the AMD64 manual
  */
 void LegacyInstruction::SetRexPrefix(uint8_t rex_flags){
+    this->flags |= REX_FLAG;
     this->rex = REX_MS_NIBBLE | rex_flags; 
 }
 
@@ -63,6 +66,7 @@ void LegacyInstruction::SetRexPrefix(uint8_t rex_flags){
  * Note: The "magic" hexadecimal values used here are referenced from the AMD64 manual
  */
 void LegacyInstruction::SetEscapeSequence(EscapeSequence escseq){
+    this->flags |= ESC_FLAG;
     this->escseq = static_cast<uint16_t>(escseq);
 }
 
@@ -72,5 +76,6 @@ void LegacyInstruction::SetEscapeSequence(EscapeSequence escseq){
  * Note: The "magic" hexadecimal values used here are referenced from the AMD64 manual
  */
 void LegacyInstruction::SetOpcode(uint32_t op){
+    this->flags |= OP_FLAG;
     this->op = op;
 }
