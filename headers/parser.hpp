@@ -21,7 +21,7 @@
   *
   * - A CPU operation (ADD/SUB/etc) is required
   * - Optionally 0-2 operands:
-  *     No operand for instructions like CALL/SYSCALL/PUSH/etc.
+  *     No operand for instructions like CALL/SYSCALL/RET/etc.
   *     1 operand for arithmetic INC/DEC/MUL/etc.
   *     2 operands for ADD/SUB/MOV/etc.
   * - Optional immediate field
