@@ -34,22 +34,22 @@
  *   xxxx 0100 0000 0000 SEGMENT_OVERRIDE (GS)
  *   xxxx 1000 0000 0000 SEGMENT_OVERRIDE (SS)
  */
-static constexpr uint16_t OPERAND_SIZE_OVERRIDE_FLAG = 0x0001;
-static constexpr uint16_t ADDRESS_SIZE_OVERRIDE_FLAG = 0x0002;
-static constexpr uint16_t LOCK_FLAG                  = 0x0004;
+static constexpr uint16_t LEGACY_OPERAND_SIZE_OVERRIDE_FLAG = 0x0001;
+static constexpr uint16_t LEGACY_ADDRESS_SIZE_OVERRIDE_FLAG = 0x0002;
+static constexpr uint16_t LEGACY_LOCK_FLAG                  = 0x0004;
 
 // REPEAT prefix flags (mutually exclusive)
-static constexpr uint16_t REP_FLAG    = 0x0008;
-static constexpr uint16_t REPEZ_FLAG  = 0x0010;
-static constexpr uint16_t REPNEZ_FLAG = 0x0020;
+static constexpr uint16_t LEGACY_REP_FLAG    = 0x0008;
+static constexpr uint16_t LEGACY_REPEZ_FLAG  = 0x0010;
+static constexpr uint16_t LEGACY_REPNEZ_FLAG = 0x0020;
 
 // SEGMENT prefix flags (mutually exclusive)
-static constexpr uint16_t SEGMENT_OVERRIDE_CS_FLAG = 0x0040;
-static constexpr uint16_t SEGMENT_OVERRIDE_DS_FLAG = 0x0080; 
-static constexpr uint16_t SEGMENT_OVERRIDE_ES_FLAG = 0x0100;
-static constexpr uint16_t SEGMENT_OVERRIDE_FS_FLAG = 0x0200;
-static constexpr uint16_t SEGMENT_OVERRIDE_GS_FLAG = 0x0400; 
-static constexpr uint16_t SEGMENT_OVERRIDE_SS_FLAG = 0x0800;
+static constexpr uint16_t LEGACY_SEGMENT_OVERRIDE_CS_FLAG = 0x0040;
+static constexpr uint16_t LEGACY_SEGMENT_OVERRIDE_DS_FLAG = 0x0080; 
+static constexpr uint16_t LEGACY_SEGMENT_OVERRIDE_ES_FLAG = 0x0100;
+static constexpr uint16_t LEGACY_SEGMENT_OVERRIDE_FS_FLAG = 0x0200;
+static constexpr uint16_t LEGACY_SEGMENT_OVERRIDE_GS_FLAG = 0x0400; 
+static constexpr uint16_t LEGACY_SEGMENT_OVERRIDE_SS_FLAG = 0x0800;
 
 /**
  * AMD64 Legacy prefix bytes
@@ -57,18 +57,18 @@ static constexpr uint16_t SEGMENT_OVERRIDE_SS_FLAG = 0x0800;
  * In contrast to the flags above, these bytes represent
  * actual values mapped from AMD64 specifications
  */
-static constexpr uint8_t OPERAND_SIZE_OVERRIDE = 0x66;
-static constexpr uint8_t ADDRESS_SIZE_OVERRIDE = 0x67;
-static constexpr uint8_t LOCK                  = 0xf0;
-static constexpr uint8_t REP                   = 0xf3;
-static constexpr uint8_t REPEZ                 = 0xf3;
-static constexpr uint8_t REPNEZ                = 0xf2;
-static constexpr uint8_t SEGMENT_OVERRIDE_CS   = 0x2e;
-static constexpr uint8_t SEGMENT_OVERRIDE_DS   = 0x3e; 
-static constexpr uint8_t SEGMENT_OVERRIDE_ES   = 0x26;
-static constexpr uint8_t SEGMENT_OVERRIDE_FS   = 0x64;
-static constexpr uint8_t SEGMENT_OVERRIDE_GS   = 0x65; 
-static constexpr uint8_t SEGMENT_OVERRIDE_SS   = 0x36;
+static constexpr uint8_t LEGACY_OPERAND_SIZE_OVERRIDE = 0x66;
+static constexpr uint8_t LEGACY_ADDRESS_SIZE_OVERRIDE = 0x67;
+static constexpr uint8_t LEGACY_LOCK                  = 0xf0;
+static constexpr uint8_t LEGACY_REP                   = 0xf3;
+static constexpr uint8_t LEGACY_REPEZ                 = 0xf3;
+static constexpr uint8_t LEGACY_REPNEZ                = 0xf2;
+static constexpr uint8_t LEGACY_SEGMENT_OVERRIDE_CS   = 0x2e;
+static constexpr uint8_t LEGACY_SEGMENT_OVERRIDE_DS   = 0x3e; 
+static constexpr uint8_t LEGACY_SEGMENT_OVERRIDE_ES   = 0x26;
+static constexpr uint8_t LEGACY_SEGMENT_OVERRIDE_FS   = 0x64;
+static constexpr uint8_t LEGACY_SEGMENT_OVERRIDE_GS   = 0x65; 
+static constexpr uint8_t LEGACY_SEGMENT_OVERRIDE_SS   = 0x36;
 
 
 /**
@@ -85,22 +85,21 @@ static constexpr uint8_t SEGMENT_OVERRIDE_SS   = 0x36;
  *   0100   0100
  *   0100   1000
  */
-static constexpr uint8_t REX_MS_NIBBLE = 0x40;
-static constexpr uint8_t REX_B         = 0x01;
-static constexpr uint8_t REX_X         = 0x02;
-static constexpr uint8_t REX_R         = 0x04;
-static constexpr uint8_t REX_W         = 0x08;
+static constexpr uint8_t REX_CONST = 0x40;
+static constexpr uint8_t REX_B     = 0x01;
+static constexpr uint8_t REX_X     = 0x02;
+static constexpr uint8_t REX_R     = 0x04;
+static constexpr uint8_t REX_W     = 0x08;
 
 /**
  * AMD64 escape sequences
  *
  * These bytes are mapped to actual AMD64 escape sequences for opcode maps
  */
-enum class EscapeSequence{
-    NONE    = 0x0000,
-    PRIMARY = 0x0f00,
-    EXT0SSE = 0x0f38,
-    EXT1SSE = 0x0f3a
+enum class EscapeSequence : uint16_t{
+    ESCAPE_NONE    = 0x0000,
+    ESCAPE_PRIMARY = 0x0f00,
+    ESCAPE_SECONDARY = 0x0f38
 };
 
 /**
@@ -135,49 +134,71 @@ enum class EscapeSequence{
  *
  * These bytes are part of the IR, not mapped to actual AMD64 constants
  * OperandType provides a mapping for operands for simpler and quicker asembler passes
+ *
+ * Operand:
+ *  S - SOurce
+ *  D - Destination
+ *
+ * Immediate:
+ *  IMM64 - 64-bit Immediate
+ *  IMM32 - 32-bit Immediate
+ *  IMM16 - 16-bit Immediate
+ *  IMM8  - 8-bit Immediate
+ *
+ * Memory:
+ *  MEM64 - 64-bit Memory Operand
+ *  MEM32 - 32-bit Memory Operand
+ *  MEM16 - 16-bit Memory Operand
+ *  MEM8  - 8-bit Memory Operand
+ *
+ * Register:
+ *  REG64 - 64-bit Register Operand
+ *  REG32 - 32-bit Register Operand
+ *  REG16 - 16-bit Register Operand
+ *  REG8  - 8-bit REgister Operand
  */
 enum class OperandType : uint8_t{
     /**Source Immediate/constants */
-    IMM_64_S   = 0x00,
-    IMM_32_S   = 0x01,
-    IMM_16_S   = 0x02,
-    IMM_8_S    = 0x03,
-    IMM_V_S  = 0x04,
+    IMM64_S   = 0x00,
+    IMM32_S   = 0x01,
+    IMM16_S   = 0x02,
+    IMM8_S    = 0x03,
+    IMMV_S  = 0x04,
     
     /**Source Memory operands */
-    MEM_64_S  = 0x05,
-    MEM_32_S  = 0x06,
-    MEM_16_S  = 0x07,
-    MEM_8_S   = 0x08,
-    MEM_V_S = 0x09,
+    MEM64_S  = 0x05,
+    MEM32_S  = 0x06,
+    MEM16_S  = 0x07,
+    MEM8_S   = 0x08,
+    MEMV_S = 0x09,
 
     /**Source CPU GPR (General Purpose Register) operands */
-    REG_64_S  = 0x0a,
-    REG_32_S  = 0x0b, 
-    REG_16_S  = 0x0c,
-    REG_8_S   = 0x0d,
-    REG_V_S = 0x0e,
+    REG64_S  = 0x0a,
+    REG32_S  = 0x0b, 
+    REG16_S  = 0x0c,
+    REG8_S   = 0x0d,
+    REGV_S = 0x0e,
 
     /**Destination Immediate/constants */
-    IMM_64_D  = 0x0f,
-    IMM_32_D  = 0x10,
-    IMM_16_D  = 0x11,
-    IMM_8_D   = 0x12,
-    IMM_V_D = 0x13,
+    IMM64_D  = 0x0f,
+    IMM32_D  = 0x10,
+    IMM16_D  = 0x11,
+    IMM8_D   = 0x12,
+    IMMV_D = 0x13,
 
     /**Destination Memory operands */
-    MEM_64_D  = 0x14,
-    MEM_32_D  = 0x15,
-    MEM_16_D  = 0x16,
-    MEM_8_D   = 0x17,
-    MEM_V_D = 0x18,
+    MEM64_D  = 0x14,
+    MEM32_D  = 0x15,
+    MEM16_D  = 0x16,
+    MEM8_D   = 0x17,
+    MEMV_D = 0x18,
 
     /**Destination CPU GPR (General Purpose Register) operands */
-    REG_64_D  = 0x19,
-    REG_32_D  = 0x1a,
-    REG_16_D  = 0x1b,
-    REG_8_D   = 0x1c,
-    REG_V_D = 0x1d
+    REG64_D  = 0x19,
+    REG32_D  = 0x1a,
+    REG16_D  = 0x1b,
+    REG8_D   = 0x1c,
+    REGV_D = 0x1d
 };
 
 /** 
@@ -269,38 +290,40 @@ enum class CpuInstruction : uint16_t{
  * AMD64 ModRM fields 
  */
 // Mod (bits 6-7)
-static constexpr uint8_t MOD_MEMORY_ADDRESS   = 0x00;
-static constexpr uint8_t MOD8_DISPLACEMENT_MEMORY_ADDRESS = 0x01;
-static constexpr uint8_t MOD32_DISPLACEMENT_MEMORY_ADDRESS = 0x02;
-static constexpr uint8_t MOD_REGISTER_OPERAND = 0x03;
+static constexpr uint8_t MOD_MEM_NO_DISP = 0x00; // [rax]
+static constexpr uint8_t MOD_DISP8 = 0x01; // [rax + disp8]
+static constexpr uint8_t MOD_DISP32 = 0x02; // [rax + disp32]
+static constexpr uint8_t MOD_REG_DIRECT = 0x03; // rax, rsp
 
-// R/M
-static constexpr uint8_t RAX     = 0x00;
-static constexpr uint8_t RCX     = 0x01;
-static constexpr uint8_t RDX     = 0x02;
-static constexpr uint8_t RBX     = 0x03;
-static constexpr uint8_t AH_RSP  = 0x04;
-static constexpr uint8_t CH_RBP  = 0x05;
-static constexpr uint8_t DH_RSI  = 0x06;
-static constexpr uint8_t BH_RDI  = 0x07;
-static constexpr uint8_t RAX_RM  = 0x00;
-static constexpr uint8_t RCX_RM  = 0x01;
-static constexpr uint8_t RDX_RM  = 0x02;
-static constexpr uint8_t RBX_RM  = 0x03;
-static constexpr uint8_t HAS_SIB = 0x04;
-static constexpr uint8_t RBP_RM  = 0x05;
-static constexpr uint8_t RSI_RM  = 0x06;
-static constexpr uint8_t RDI_RM  = 0x07;
+// .reg
+static constexpr uint8_t MOD_REG_RAX    = 0x00;
+static constexpr uint8_t MOD_REG_RCX    = 0x01;
+static constexpr uint8_t MOD_REG_RDX    = 0x02;
+static constexpr uint8_t MOD_REG_RBX    = 0x03;
+static constexpr uint8_t MOD_REG_AH_RSP = 0x04;
+static constexpr uint8_t MOD_REG_CH_RBP = 0x05;
+static constexpr uint8_t MOD_REG_DH_RSI = 0x06;
+static constexpr uint8_t MOD_REG_BH_RDI = 0x07;
+
+// .r/m
+static constexpr uint8_t MOD_RM_RAX = 0x00;
+static constexpr uint8_t MOD_RM_RCX = 0x01;
+static constexpr uint8_t MOD_RM_RDX = 0x02;
+static constexpr uint8_t MOD_RM_RBX = 0x03;
+static constexpr uint8_t MOD_RM_SIB = 0x04;
+static constexpr uint8_t MOD_RM_RBP = 0x05;
+static constexpr uint8_t MOD_RM_RSI = 0x06;
+static constexpr uint8_t MOD_RM_RDI = 0x07;
 
 /**
  * AMD64 SIB fields
  */
 
 // SIB scale factors
-static constexpr uint8_t SIB1_SCALE_FACTOR = 0x00; // scale 8 bits
-static constexpr uint8_t SIB2_SCALE_FACTOR = 0x01; // scale 16 bits
-static constexpr uint8_t SIB4_SCALE_FACTOR = 0x02; // scale 32 bits
-static constexpr uint8_t SIB8_SCALE_FACTOR = 0x03; // scale 64 bits
+static constexpr uint8_t SIB_SCALE_FACTOR_1 = 0x00; // scale 8 bits
+static constexpr uint8_t SIB_SCALE_FACTOR_2 = 0x01; // scale 16 bits
+static constexpr uint8_t SIB_SCALE_FACTOR_4 = 0x02; // scale 32 bits
+static constexpr uint8_t SIB_SCALE_FACTOR_8 = 0x03; // scale 64 bits
 
 // SIB index
 static constexpr uint8_t SIB_RAX_INDEX = 0x00;
@@ -313,16 +336,15 @@ static constexpr uint8_t SIB_RSI_INDEX = 0x06;
 static constexpr uint8_t SIB_RDI_INDEX = 0x07;
 
 // SIB base
-static constexpr uint8_t SIB_RAX_BASE    = 0x00;
-static constexpr uint8_t SIB_RCX_BASE    = 0x01;
-static constexpr uint8_t SIB_RBX_BASE    = 0x02;
-static constexpr uint8_t SIB_RDX_BASE    = 0x03;
-static constexpr uint8_t SIB_RSP_BASE    = 0x04;
-static constexpr uint8_t SIB_RBP_NO_BASE = 0x05;
-static constexpr uint8_t SIB_RSI_BASE    = 0x06;
-static constexpr uint8_t SIB_RDI_BASE    = 0x07;
+static constexpr uint8_t SIB_BASE_RAX    = 0x00;
+static constexpr uint8_t SIB_BASE_RCX    = 0x01;
+static constexpr uint8_t SIB_BASE_RBX    = 0x02;
+static constexpr uint8_t SIB_BASE_RDX    = 0x03;
+static constexpr uint8_t SIB_BASE_RSP    = 0x04;
+static constexpr uint8_t SIB_NO_BASE_RBP = 0x05;
+static constexpr uint8_t SIB_BASE_RSI    = 0x06;
+static constexpr uint8_t SIB_BASE_RDI    = 0x07;
 
-// SIB base for ModRM r/m = 0x04
 
 
 /**
@@ -384,13 +406,17 @@ class LegacyInstruction{
 
         void SetOpcode(uint32_t operation);
 
-        void SetModRM();
+        void SetModRM(uint8_t mod, uint8_t reg, uint8_t rm);
 
-        void SetSIB();
+        void SetSIB(uint8_t scale_factor, uint8_t index, uint8_t base);
 
         void SetDisplacement();
 
         void SetImmediate();
+
+        void SetFlags(uint8_t flags);
+
+        uint8_t GetFlags();
 };
 
 #endif
