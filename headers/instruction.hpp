@@ -289,13 +289,13 @@ enum class CpuInstruction : uint16_t{
 /**
  * AMD64 ModRM fields 
  */
-// Mod (bits 6-7)
+// ModRM.mod (bits 6-7)
 static constexpr uint8_t MOD_MEM_NO_DISP = 0x00; // [rax]
 static constexpr uint8_t MOD_DISP8 = 0x01; // [rax + disp8]
 static constexpr uint8_t MOD_DISP32 = 0x02; // [rax + disp32]
 static constexpr uint8_t MOD_REG_DIRECT = 0x03; // rax, rsp
 
-// .reg
+// ModRM.reg
 static constexpr uint8_t MOD_REG_RAX    = 0x00;
 static constexpr uint8_t MOD_REG_RCX    = 0x01;
 static constexpr uint8_t MOD_REG_RDX    = 0x02;
@@ -305,7 +305,7 @@ static constexpr uint8_t MOD_REG_CH_RBP = 0x05;
 static constexpr uint8_t MOD_REG_DH_RSI = 0x06;
 static constexpr uint8_t MOD_REG_BH_RDI = 0x07;
 
-// .r/m
+// ModRM.r/m
 static constexpr uint8_t MOD_RM_RAX = 0x00;
 static constexpr uint8_t MOD_RM_RCX = 0x01;
 static constexpr uint8_t MOD_RM_RDX = 0x02;
@@ -326,14 +326,14 @@ static constexpr uint8_t SIB_SCALE_FACTOR_4 = 0x02; // scale 32 bits
 static constexpr uint8_t SIB_SCALE_FACTOR_8 = 0x03; // scale 64 bits
 
 // SIB index
-static constexpr uint8_t SIB_RAX_INDEX = 0x00;
-static constexpr uint8_t SIB_RCX_INDEX = 0x01;
-static constexpr uint8_t SIB_RBX_INDEX = 0x02;
-static constexpr uint8_t SIB_RDX_INDEX = 0x03;
-static constexpr uint8_t SIB_NO_INDEX  = 0x04;
-static constexpr uint8_t SIB_RBP_INDEX = 0x05;
-static constexpr uint8_t SIB_RSI_INDEX = 0x06;
-static constexpr uint8_t SIB_RDI_INDEX = 0x07;
+static constexpr uint8_t SIB_INDEX_RAX = 0x00;
+static constexpr uint8_t SIB_INDEX_RCX = 0x01;
+static constexpr uint8_t SIB_INDEX_RBX = 0x02;
+static constexpr uint8_t SIB_INDEX_RDX = 0x03;
+static constexpr uint8_t SIB_INDEX_NONE  = 0x04;
+static constexpr uint8_t SIB_INDEX_RBP = 0x05;
+static constexpr uint8_t SIB_INDEX_RSI = 0x06;
+static constexpr uint8_t SIB_INDEX_RDI = 0x07;
 
 // SIB base
 static constexpr uint8_t SIB_BASE_RAX    = 0x00;
@@ -344,7 +344,6 @@ static constexpr uint8_t SIB_BASE_RSP    = 0x04;
 static constexpr uint8_t SIB_NO_BASE_RBP = 0x05;
 static constexpr uint8_t SIB_BASE_RSI    = 0x06;
 static constexpr uint8_t SIB_BASE_RDI    = 0x07;
-
 
 
 /**
