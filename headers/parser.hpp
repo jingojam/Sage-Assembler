@@ -23,33 +23,6 @@ static const uint8_t NO_OPERAND          = 1;
 static const uint8_t DESTINATION_OPERAND = 2;
 static const uint8_t SOURCE_OPERAND      = 3;
 
-std::unordered_map<std::string, uint16_t> INSTRUCTION_SET = {
-    {"add", CpuInstruction::ADD},
-    {"sub", CpuInstruction::SUB},
-    {"mul", CpuInstruction::MUL},
-    {"div", CpuInstruction::DIV},
-    {"mov", CpuInstruction::MOV}
-};
-
-std::unordered_map<std::string, uint8_t> REGISTER_SET = {
-    {"rax", 0x00},
-    {"rbx", 0x01},
-    {"rcx", 0x02},
-    {"rdx", 0x03},
-    {"rdi", 0x04},
-    {"rsi", 0x05},
-    {"rbp", 0x06},
-    {"rsp", 0x07},
-    {"r8", 0x08},
-    {"r9", 0x09},
-    {"r10", 0x0a},
-    {"r11", 0x0b},
-    {"r12", 0x0c},
-    {"r13", 0x0d},
-    {"r14", 0x0e},
-    {"r15", 0x0f},
-};
-
  /**
   * Immediate Representation of parsed assembly instructions
   *

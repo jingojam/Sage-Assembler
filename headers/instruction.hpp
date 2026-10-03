@@ -5,375 +5,447 @@
 #include <string>
 #include <array>
 #include <cstdint>
-#include <optional>
 
 /**
  * Reference: AMD64 Technology, AMD64 Architecture Programmer's Manual Volumes 1-5
  * Publication No. 40332, Revision 1.0, July 2026
  */
 
-/**
- * AMD64 legacy prefix representation flags
- * 
- * These are flag bytes to represent mutually inclusive legacy prefixes,
- * which is part of SageAMD64 IR in signalling presence of such prefixes in encoding
- *
- * Flags:
- *   16 bits wide, most significant nibble ignored (x)
- *   xxxx 0000 0000 0000 NONE
- *   xxxx 0000 0000 0001 OPERAND_SIZE_OVERRIDE
- *   xxxx 0000 0000 0010 ADDRESS_SIZE_OVERRIDE
- *   xxxx 0000 0000 0100 LOCK
- *   xxxx 0000 0000 1000 REP
- *   xxxx 0000 0001 0000 REPE/Z
- *   xxxx 0000 0010 0000 REPNE/Z
- *   xxxx 0000 0100 0000 SEGMENT_OVERRIDE (CS)
- *   xxxx 0000 1000 0000 SEGMENT_OVERRIDE (DS)
- *   xxxx 0001 0000 0000 SEGMENT_OVERRIDE (ES)
- *   xxxx 0010 0000 0000 SEGMENT_OVERRIDE (FS)
- *   xxxx 0100 0000 0000 SEGMENT_OVERRIDE (GS)
- *   xxxx 1000 0000 0000 SEGMENT_OVERRIDE (SS)
- */
-static constexpr uint16_t LEGACY_OPERAND_SIZE_OVERRIDE_FLAG = 0x0001;
-static constexpr uint16_t LEGACY_ADDRESS_SIZE_OVERRIDE_FLAG = 0x0002;
-static constexpr uint16_t LEGACY_LOCK_FLAG                  = 0x0004;
+namespace Bytes {
 
-// REPEAT prefix flags (mutually exclusive)
-static constexpr uint16_t LEGACY_REP_FLAG    = 0x0008;
-static constexpr uint16_t LEGACY_REPEZ_FLAG  = 0x0010;
-static constexpr uint16_t LEGACY_REPNEZ_FLAG = 0x0020;
+    /**
+     * Logical groupings for Byte mappings for 
+     *  AMD64 encoding (mapped from AMD64 Programmer's Manual)
+     */
+    namespace AMD64 {
 
-// SEGMENT prefix flags (mutually exclusive)
-static constexpr uint16_t LEGACY_SEGMENT_OVERRIDE_CS_FLAG = 0x0040;
-static constexpr uint16_t LEGACY_SEGMENT_OVERRIDE_DS_FLAG = 0x0080; 
-static constexpr uint16_t LEGACY_SEGMENT_OVERRIDE_ES_FLAG = 0x0100;
-static constexpr uint16_t LEGACY_SEGMENT_OVERRIDE_FS_FLAG = 0x0200;
-static constexpr uint16_t LEGACY_SEGMENT_OVERRIDE_GS_FLAG = 0x0400; 
-static constexpr uint16_t LEGACY_SEGMENT_OVERRIDE_SS_FLAG = 0x0800;
+        /**
+         * Legacy prefix byte
+         */
+        namespace LegacyPrefix {
+            inline constexpr uint8_t OPERAND_SIZE_OVERRIDE = 0x66;
+            inline constexpr uint8_t ADDRESS_SIZE_OVERRIDE = 0x67;
+            inline constexpr uint8_t LOCK          = 0xf0;
+            inline constexpr uint8_t REP           = 0xf3;
+            inline constexpr uint8_t REPEZ         = 0xf3;
+            inline constexpr uint8_t REPNEZ        = 0xf2;
+            inline constexpr uint8_t SEGMENT_OVERRIDE_CS   = 0x2e;
+            inline constexpr uint8_t SEGMENT_OVERRIDE_DS   = 0x3e; 
+            inline constexpr uint8_t SEGMENT_OVERRIDE_ES   = 0x26;
+            inline constexpr uint8_t SEGMENT_OVERRIDE_FS   = 0x64;
+            inline constexpr uint8_t SEGMENT_OVERRIDE_GS   = 0x65; 
+            inline constexpr uint8_t SEGMENT_OVERRIDE_SS   = 0x36;
+        }
 
-/**
- * AMD64 Legacy prefix bytes
- *
- * In contrast to the flags above, these bytes represent
- * actual values mapped from AMD64 specifications
- */
-static constexpr uint8_t LEGACY_OPERAND_SIZE_OVERRIDE = 0x66;
-static constexpr uint8_t LEGACY_ADDRESS_SIZE_OVERRIDE = 0x67;
-static constexpr uint8_t LEGACY_LOCK                  = 0xf0;
-static constexpr uint8_t LEGACY_REP                   = 0xf3;
-static constexpr uint8_t LEGACY_REPEZ                 = 0xf3;
-static constexpr uint8_t LEGACY_REPNEZ                = 0xf2;
-static constexpr uint8_t LEGACY_SEGMENT_OVERRIDE_CS   = 0x2e;
-static constexpr uint8_t LEGACY_SEGMENT_OVERRIDE_DS   = 0x3e; 
-static constexpr uint8_t LEGACY_SEGMENT_OVERRIDE_ES   = 0x26;
-static constexpr uint8_t LEGACY_SEGMENT_OVERRIDE_FS   = 0x64;
-static constexpr uint8_t LEGACY_SEGMENT_OVERRIDE_GS   = 0x65; 
-static constexpr uint8_t LEGACY_SEGMENT_OVERRIDE_SS   = 0x36;
+        /**
+         * REX byte
+         */
+        namespace REX {
+            inline constexpr uint8_t REX_CONST = 0x40;
+            inline constexpr uint8_t B         = 0x01;
+            inline constexpr uint8_t X         = 0x02;
+            inline constexpr uint8_t R         = 0x04;
+            inline constexpr uint8_t W         = 0x08;
+        }
 
+        /**
+         * Escape sequence 
+         */
+        namespace EscapeSequence {
+            inline constexpr uint16_t PRIMARY   = 0x0f00; 
+            inline constexpr uint16_t SECONDARY = 0x0f38;
+        }
 
-/**
- * AMD64 REX prefix bytes
- *
- * These bytes represent the actual REX prefix fields in AMD64
- * 
- * Flags:
- *   8 bits wide, most significant nibble is a constant (0x40)
- *
- *   const  wrxb
- *   0100   0001
- *   0100   0010
- *   0100   0100
- *   0100   1000
- */
-static constexpr uint8_t REX_CONST = 0x40;
-static constexpr uint8_t REX_B     = 0x01;
-static constexpr uint8_t REX_X     = 0x02;
-static constexpr uint8_t REX_R     = 0x04;
-static constexpr uint8_t REX_W     = 0x08;
+        /**
+         * Opcode values
+         */
+        namespace Opcode {
+            /** 2-Operand Fundamental Arithmetic Ops (Reg/Mem to/from Reg) */
+            inline constexpr uint8_t ADD = 0x01;  // ADD Ev, Gv
+            inline constexpr uint8_t ADC = 0x11;  // ADC Ev, Gv (add carry-enabled)
+            inline constexpr uint8_t SUB = 0x29;  // SUB Ev, Gv
 
-/**
- * AMD64 escape sequences
- *
- * These bytes are mapped to actual AMD64 escape sequences for opcode maps
- */
-enum class EscapeSequence : uint16_t{
-    ESCAPE_NONE    = 0x0000,
-    ESCAPE_PRIMARY = 0x0f00,
-    ESCAPE_SECONDARY = 0x0f38
-};
+            /** 1-Operand Arithmetic Ops */
+            inline constexpr uint8_t IMUL = 0x0faf; // 2-byte Near Multi-operand IMUL (0x0F 0xAF)
+            inline constexpr uint8_t IDIV = 0xf7;
+            inline constexpr uint8_t MUL  = 0xf7;
+            inline constexpr uint8_t DIV  = 0xf7;
+            inline constexpr uint8_t INC  = 0xff;   // ModR/M form mandatory for AMD64 (uses /0 extension)
 
-/**
- * Mapping scheme for (internally represented) encoded operations to the primary/secondary opcode map
- *
- * Bit fields:
- *  Bits 0-7: Source Operand Field
- *  Bits 8-15: Destination Operand Field
- *  Bits 16-31: CPU Instruction Opcode Mapping
- * The source and destination operand bit fields are ignored for instructions that does not require an operand 
- *
- * For example, the assembly instructions: 
- *  add rax, rbx
- *  inc rax
- *  syscall
- *
- * will be represented, respectively, as:
- *  ADD (CpuInstruction::ADD) RAX (REG_64_D), RBX (RBX_64_S)
- *  INC (CpuInstruction::INC) RAX (REG_64_D)
- *  SYSCALL (CpuInstruction::SYSCALL)
- * 
- * And encoded as:
- *  00 00 19 0a
- *  00 ff 19 00
- *  0f 05 00 00
- *
- */
+            /** 2-Operand Bit Ops */
+            inline constexpr uint8_t OR  = 0x09;  // OR Ev, Gv
+            inline constexpr uint8_t AND = 0x21;  // AND Ev, Gv
+            inline constexpr uint8_t XOR = 0x31;  // XOR Ev, Gv
 
+            /** 1-Operand Bit Ops */
+            inline constexpr uint8_t NOT = 0xf7;  // Uses /2 ModR/M extension
+            inline constexpr uint8_t NEG = 0xf7;  // Uses /3 ModR/M extension
+            // SHL
+            // SHR
+            // ROR
+            // ROL
 
-/**
- * AMD64 instruction operand types
- *
- * These bytes are part of the IR, not mapped to actual AMD64 constants
- * OperandType provides a mapping for operands for simpler and quicker asembler passes
- *
- * Operand:
- *  S - SOurce
- *  D - Destination
- *
- * Immediate:
- *  IMM64 - 64-bit Immediate
- *  IMM32 - 32-bit Immediate
- *  IMM16 - 16-bit Immediate
- *  IMM8  - 8-bit Immediate
- *
- * Memory:
- *  MEM64 - 64-bit Memory Operand
- *  MEM32 - 32-bit Memory Operand
- *  MEM16 - 16-bit Memory Operand
- *  MEM8  - 8-bit Memory Operand
- *
- * Register:
- *  REG64 - 64-bit Register Operand
- *  REG32 - 32-bit Register Operand
- *  REG16 - 16-bit Register Operand
- *  REG8  - 8-bit REgister Operand
- */
-enum class OperandType : uint8_t{
-    /**Source Immediate/constants */
-    IMM64_S   = 0x00,
-    IMM32_S   = 0x01,
-    IMM16_S   = 0x02,
-    IMM8_S    = 0x03,
-    IMMV_S  = 0x04,
-    
-    /**Source Memory operands */
-    MEM64_S  = 0x05,
-    MEM32_S  = 0x06,
-    MEM16_S  = 0x07,
-    MEM8_S   = 0x08,
-    MEMV_S = 0x09,
+            /** Data Transfer */
+            inline constexpr uint8_t PUSH_GPR = 0x50;   // Base for PUSH r64 (0x50 + reg_id)
+            inline constexpr uint8_t POP_GPR  = 0x58;   // Base for POP r64 (0x58 + reg_id)
+            inline constexpr uint8_t LEA      = 0x8d;   // LEA Gv, M
+            inline constexpr uint8_t MOV_GPR  = 0x89;   // MOV Ev, Gv (Register/Memory to Register)
+            inline constexpr uint8_t MOV_IMM  = 0xb8;   // Base for MOV r64, imm64 (0xB8 + reg_id)
 
-    /**Source CPU GPR (General Purpose Register) operands */
-    REG64_S  = 0x0a,
-    REG32_S  = 0x0b, 
-    REG16_S  = 0x0c,
-    REG8_S   = 0x0d,
-    REGV_S = 0x0e,
+            /** Conditions */
+            inline constexpr uint8_t CMP = 0x39;  // CMP Ev, Gv
 
-    /**Destination Immediate/constants */
-    IMM64_D  = 0x0f,
-    IMM32_D  = 0x10,
-    IMM16_D  = 0x11,
-    IMM8_D   = 0x12,
-    IMMV_D = 0x13,
+            /** Control Flow */
+            inline constexpr uint8_t CALL = 0xe8;  // CALL rel32
+            inline constexpr uint8_t RET  = 0xc3;
 
-    /**Destination Memory operands */
-    MEM64_D  = 0x14,
-    MEM32_D  = 0x15,
-    MEM16_D  = 0x16,
-    MEM8_D   = 0x17,
-    MEMV_D = 0x18,
+            /** SHort Jumps (8-bit relative displacement) */
+            inline constexpr uint8_t JO   = 0x70; // Jump if Overflow (OF=1)
+            inline constexpr uint8_t JNO  = 0x71; // Jump if Not Overflow (OF=0)
+            inline constexpr uint8_t JB   = 0x72; // Jump if Below / Carry / Not Above or Equal (CF=1) -> Unsigned <
+            inline constexpr uint8_t JAE  = 0x73; // Jump if Above or Equal / Not Below / No Carry (CF=0) -> Unsigned >=
+            inline constexpr uint8_t JE   = 0x74; // Jump if Equal / Zero (ZF=1) -> ==
+            inline constexpr uint8_t JNE  = 0x75; // Jump if Not Equal / Not Zero (ZF=0) -> !=
+            inline constexpr uint8_t JBE  = 0x76; // Jump if Below or Equal / Not Above (CF=1 or ZF=1) -> Unsigned <=
+            inline constexpr uint8_t JA   = 0x77; // Jump if Above / Not Below or Equal (CF=0 and ZF=0) -> Unsigned >
+            inline constexpr uint8_t JS   = 0x78; // Jump if Sign / Negative (SF=1)
+            inline constexpr uint8_t JNS  = 0x79; // Jump if Not Sign / Positive (SF=0)
+            inline constexpr uint8_t JP   = 0x7a; // Jump if Parity / Parity Even (PF=1)
+            inline constexpr uint8_t JNP  = 0x7b; // Jump if Not Parity / Parity Odd (PF=0)
+            inline constexpr uint8_t JL   = 0x7c; // Jump if Less / Not Greater or Equal (SF != OF) -> Signed <
+            inline constexpr uint8_t JGE  = 0x7d; // Jump if Greater or Equal / Not Less (SF == OF) -> Signed >=
+            inline constexpr uint8_t JLE  = 0x7e; // Jump if Less or Equal / Not Greater (ZF=1 or SF != OF) -> Signed <=
+            inline constexpr uint8_t JG   = 0x7f; // Jump if Greater / Not Less or Equal (ZF=0 and SF == OF
 
-    /**Destination CPU GPR (General Purpose Register) operands */
-    REG64_D  = 0x19,
-    REG32_D  = 0x1a,
-    REG16_D  = 0x1b,
-    REG8_D   = 0x1c,
-    REGV_D = 0x1d
-};
+            /** Near Jumps (32-bit relative displacement alternatives) */
+            inline constexpr uint16_t JO_NEAR  = 0x0f80;
+            inline constexpr uint16_t JNO_NEAR = 0x0f81;
+            inline constexpr uint16_t JB_NEAR  = 0x0f82;
+            inline constexpr uint16_t JAE_NEAR = 0x0f83;
+            inline constexpr uint16_t JE_NEAR  = 0x0f84;
+            inline constexpr uint16_t JNE_NEAR = 0x0f85;
+            inline constexpr uint16_t JBE_NEAR = 0x0f86;
+            inline constexpr uint16_t JA_NEAR  = 0x0f87;
+            inline constexpr uint16_t JS_NEAR  = 0x0f88;
+            inline constexpr uint16_t JNS_NEAR = 0x0f89;
+            inline constexpr uint16_t JP_NEAR  = 0x0f8a;
+            inline constexpr uint16_t JNP_NEAR = 0x0f8b;
+            inline constexpr uint16_t JL_NEAR  = 0x0f8c;
+            inline constexpr uint16_t JGE_NEAR = 0x0f8d;
+            inline constexpr uint16_t JLE_NEAR = 0x0f8e;
+            inline constexpr uint16_t JG_NEAR  = 0x0f8f;
 
-/** 
- * CPU instructions mapped to AMD64 primary/secondary opcode maps
- *
- * These bytes correspond to actual AMD64 opcodes.
- */
-enum class CpuInstruction : uint16_t{
-    /** 2-Operand Fundamental Arithmetic Ops (Reg/Mem to/from Reg) */
-    ADD = 0x01,  // ADD Ev, Gv
-    ADC = 0x11,  // ADC Ev, Gv
-    SUB = 0x29,  // SUB Ev, Gv
+            /** Syscall */
+            inline constexpr uint16_t SYSCALL = 0x0f05;  // Native x86 instruction order (0x0F, 0x05)
+        
+            inline static constexpr std::unordered_map<std::string, uint8_t> PRIMARY_OPCODE_MAP = {
+                
+            };
 
-    /** 1-Operand Arithmetic Ops */
-    IMUL = 0x0faf, // 2-byte Near Multi-operand IMUL (0x0F 0xAF)
-    IDIV = 0xf7,
-    MUL  = 0xf7,
-    DIV  = 0xf7,
-    INC  = 0xff,   // ModR/M form mandatory for AMD64 (uses /0 extension)
+            inline static constexpr std::unordered_map<std::string, uint16_t> SECONDARY_OPCODE_MAP = {
+                {"syscall", 0x0f05}
+            };
+        }
 
-    /** 2-Operand Bit Ops */
-    OR  = 0x09,  // OR Ev, Gv
-    AND = 0x21,  // AND Ev, Gv
-    XOR = 0x31,  // XOR Ev, Gv
+        /**
+         * ModRM byte
+         */
+        namespace ModRM {
 
-    /** 1-Operand Bit Ops */
-    NOT = 0xf7,  // Uses /2 ModR/M extension
-    NEG = 0xf7,  // Uses /3 ModR/M extension
-    // SHL
-    // SHR
-    // ROR
-    // ROL
+            /**
+             * ModRM.mod field
+             */
+            namespace Mod {
+                inline constexpr uint8_t NO_DISP    = 0x00; // [rax]
+                inline constexpr uint8_t DISP8      = 0x01; // [rax + 8-bit displacement]
+                inline constexpr uint8_t DISP32     = 0x02; // [rax + 32-bit displacement]
+                inline constexpr uint8_t REG_DIRECT = 0x03; // rax, rsp
+            }
 
-    /** Data Transfer */
-    PUSH_GPR = 0x50,   // Base for PUSH r64 (0x50 + reg_id)
-    POP_GPR  = 0x58,   // Base for POP r64 (0x58 + reg_id)
-    LEA      = 0x8d,   // LEA Gv, M
-    MOV_GPR  = 0x89,   // MOV Ev, Gv (Register/Memory to Register)
-    MOV_IMM  = 0xb8,   // Base for MOV r64, imm64 (0xB8 + reg_id)
+            /**
+             * ModRM.reg field
+             */
+            namespace Reg {
+                inline constexpr uint8_t RAX    = 0x00;
+                inline constexpr uint8_t RCX    = 0x01;
+                inline constexpr uint8_t RDX    = 0x02;
+                inline constexpr uint8_t RBX    = 0x03;
+                inline constexpr uint8_t AH_RSP = 0x04;
+                inline constexpr uint8_t CH_RBP = 0x05;
+                inline constexpr uint8_t DH_RSI = 0x06;
+                inline constexpr uint8_t BH_RDI = 0x07; 
+            }
 
-    /** Conditions */
-    CMP = 0x39,  // CMP Ev, Gv
+            /**
+             * ModRM.r/m field
+             */
+            namespace RM {
+                inline constexpr uint8_t RAX = 0x00;
+                inline constexpr uint8_t RCX = 0x01;
+                inline constexpr uint8_t RDX = 0x02;
+                inline constexpr uint8_t RBX = 0x03;
+                inline constexpr uint8_t SIB = 0x04;
+                inline constexpr uint8_t RBP = 0x05;
+                inline constexpr uint8_t RSI = 0x06;
+                inline constexpr uint8_t RDI = 0x07;
+            }
+        }
 
-    /** Control Flow */
-    CALL = 0xe8,  // CALL rel32
-    RET  = 0xc3,
+        /**
+         * SIB bytes
+         */
+        namespace SIB {
 
-    /** SHort Jumps (8-bit relative displacement) */
-    JO   = 0x70, // Jump if Overflow (OF=1)
-    JNO  = 0x71, // Jump if Not Overflow (OF=0)
-    JB   = 0x72, // Jump if Below / Carry / Not Above or Equal (CF=1) -> Unsigned <
-    JAE  = 0x73, // Jump if Above or Equal / Not Below / No Carry (CF=0) -> Unsigned >=
-    JE   = 0x74, // Jump if Equal / Zero (ZF=1) -> ==
-    JNE  = 0x75, // Jump if Not Equal / Not Zero (ZF=0) -> !=
-    JBE  = 0x76, // Jump if Below or Equal / Not Above (CF=1 or ZF=1) -> Unsigned <=
-    JA   = 0x77, // Jump if Above / Not Below or Equal (CF=0 and ZF=0) -> Unsigned >
-    JS   = 0x78, // Jump if Sign / Negative (SF=1)
-    JNS  = 0x79, // Jump if Not Sign / Positive (SF=0)
-    JP   = 0x7a, // Jump if Parity / Parity Even (PF=1)
-    JNP  = 0x7b, // Jump if Not Parity / Parity Odd (PF=0)
-    JL   = 0x7c, // Jump if Less / Not Greater or Equal (SF != OF) -> Signed <
-    JGE  = 0x7d, // Jump if Greater or Equal / Not Less (SF == OF) -> Signed >=
-    JLE  = 0x7e, // Jump if Less or Equal / Not Greater (ZF=1 or SF != OF) -> Signed <=
-    JG   = 0x7f, // Jump if Greater / Not Less or Equal (ZF=0 and SF == OF
+            /**
+             * 1/2/4/8-byte SIB scale factors
+             */
+            namespace ScaleFactor {
+                inline constexpr uint8_t BYTE  = 0x00;
+                inline constexpr uint8_t WORD  = 0x01;
+                inline constexpr uint8_t DWORD = 0x02;
+                inline constexpr uint8_t QWORD = 0x03;
+            }
 
-    /** Near Jumps (32-bit relative displacement alternatives) */
-    JO_NEAR  = 0x0f80,
-    JNO_NEAR = 0x0f81,
-    JB_NEAR  = 0x0f82,
-    JAE_NEAR = 0x0f83,
-    JE_NEAR  = 0x0f84,
-    JNE_NEAR = 0x0f85,
-    JBE_NEAR = 0x0f86,
-    JA_NEAR  = 0x0f87,
-    JS_NEAR  = 0x0f88,
-    JNS_NEAR = 0x0f89,
-    JP_NEAR  = 0x0f8a,
-    JNP_NEAR = 0x0f8b,
-    JL_NEAR  = 0x0f8c,
-    JGE_NEAR = 0x0f8d,
-    JLE_NEAR = 0x0f8e,
-    JG_NEAR  = 0x0f8f,
+            /**
+             * SIB index field
+             */
+            namespace Index {
+                inline constexpr uint8_t RAX  = 0x00;
+                inline constexpr uint8_t RCX  = 0x01;
+                inline constexpr uint8_t RBX  = 0x02;
+                inline constexpr uint8_t RDX  = 0x03;
+                inline constexpr uint8_t NONE = 0x04;
+                inline constexpr uint8_t RBP  = 0x05;
+                inline constexpr uint8_t RSI  = 0x06;
+                inline constexpr uint8_t RDI  = 0x07;
+            }
 
-    /** Syscall */
-    SYSCALL = 0x0f05,  // Native x86 instruction order (0x0F, 0x05)
-};
+            /**
+             * SIB base field
+             */
+            namespace Base {
+                inline constexpr uint8_t RAX         = 0x00;
+                inline constexpr uint8_t RCX         = 0x01;
+                inline constexpr uint8_t RBX         = 0x02;
+                inline constexpr uint8_t RDX         = 0x03;
+                inline constexpr uint8_t RSP         = 0x04;
+                inline constexpr uint8_t NO_BASE_RBP = 0x05;
+                inline constexpr uint8_t RSI         = 0x06;
+                inline constexpr uint8_t RDI         = 0x07;
+            }
+        }
+    }
 
-/**
- * AMD64 ModRM fields 
- */
-// ModRM.mod (bits 6-7)
-static constexpr uint8_t MOD_MEM_NO_DISP = 0x00; // [rax]
-static constexpr uint8_t MOD_DISP8 = 0x01; // [rax + disp8]
-static constexpr uint8_t MOD_DISP32 = 0x02; // [rax + disp32]
-static constexpr uint8_t MOD_REG_DIRECT = 0x03; // rax, rsp
+    /**
+     * Namespace for logical grouping of IR values
+     */
+    namepace IR {
 
-// ModRM.reg
-static constexpr uint8_t MOD_REG_RAX    = 0x00;
-static constexpr uint8_t MOD_REG_RCX    = 0x01;
-static constexpr uint8_t MOD_REG_RDX    = 0x02;
-static constexpr uint8_t MOD_REG_RBX    = 0x03;
-static constexpr uint8_t MOD_REG_AH_RSP = 0x04;
-static constexpr uint8_t MOD_REG_CH_RBP = 0x05;
-static constexpr uint8_t MOD_REG_DH_RSI = 0x06;
-static constexpr uint8_t MOD_REG_BH_RDI = 0x07;
+        /**
+         * Logical groupings of IR flags 
+         */
+        namespace Flags {
 
-// ModRM.r/m
-static constexpr uint8_t MOD_RM_RAX = 0x00;
-static constexpr uint8_t MOD_RM_RCX = 0x01;
-static constexpr uint8_t MOD_RM_RDX = 0x02;
-static constexpr uint8_t MOD_RM_RBX = 0x03;
-static constexpr uint8_t MOD_RM_SIB = 0x04;
-static constexpr uint8_t MOD_RM_RBP = 0x05;
-static constexpr uint8_t MOD_RM_RSI = 0x06;
-static constexpr uint8_t MOD_RM_RDI = 0x07;
+            /**
+             * Assembler encoding flags
+             * Flags:
+             *  8 bits wide
+             *  0000 0001 LEGACY_FLAG
+             *  0000 0010 REX_FLAG
+             *  0000 0100 ESC_FLAG
+             *  0000 1000 OP_FLAG
+             *  0001 0000 MODRM_FLAG
+             *  0010 0000 SIB_FLAG
+             *  0100 0000 DISP_FLAG
+             *  1000 0000 IMM_FLAG
+             */
+            namespace EncodingFlags {
+                inline constexpr uint8_t LEGACY_FLAG = 0x01;
+                inline constexpr uint8_t REX_FLAG    = 0x02;
+                inline constexpr uint8_t ESC_FLAG    = 0x04;
+                inline constexpr uint8_t OP_FLAG     = 0x08;
+                inline constexpr uint8_t MODRM_FLAG  = 0x10;
+                inline constexpr uint8_t SIB_FLAG    = 0x20;
+                inline constexpr uint8_t DISP_FLAG   = 0x40;
+                inline constexpr uint8_t IMM_FLAG    = 0x80;
+            }
 
-/**
- * AMD64 SIB fields
- */
+            /**
+             * Legacy prefix flags
+             *
+             * Flags:
+             *   16 bits wide, most significant nibble ignored (x)
+             *   xxxx 0000 0000 0000 NONE
+             *   xxxx 0000 0000 0001 OPERAND_SIZE_OVERRIDE
+             *   xxxx 0000 0000 0010 ADDRESS_SIZE_OVERRIDE
+             *   xxxx 0000 0000 0100 LOCK
+             *   xxxx 0000 0000 1000 REP
+             *   xxxx 0000 0001 0000 REPE/Z
+             *   xxxx 0000 0010 0000 REPNE/Z
+             *   xxxx 0000 0100 0000 SEGMENT_OVERRIDE (CS)
+             *   xxxx 0000 1000 0000 SEGMENT_OVERRIDE (DS)
+             *   xxxx 0001 0000 0000 SEGMENT_OVERRIDE (ES)
+             *   xxxx 0010 0000 0000 SEGMENT_OVERRIDE (FS)
+             *   xxxx 0100 0000 0000 SEGMENT_OVERRIDE (GS)
+             *   xxxx 1000 0000 0000 SEGMENT_OVERRIDE (SS)
+             */
+            namespace LegacyPrefixFlags {
+                inline constexpr uint16_t OPERAND_SIZE_OVERRIDE_FLAG = 0x0001;
+                inline constexpr uint16_t ADDRESS_SIZE_OVERRIDE_FLAG = 0x0002;
+                inline constexpr uint16_t LOCK_FLAG                  = 0x0004;
 
-// SIB scale factors
-static constexpr uint8_t SIB_SCALE_FACTOR_1 = 0x00; // scale 8 bits
-static constexpr uint8_t SIB_SCALE_FACTOR_2 = 0x01; // scale 16 bits
-static constexpr uint8_t SIB_SCALE_FACTOR_4 = 0x02; // scale 32 bits
-static constexpr uint8_t SIB_SCALE_FACTOR_8 = 0x03; // scale 64 bits
+                // REPEAT prefix flags (mutually exclusive)
+                inline constexpr uint16_t REP_FLAG    = 0x0008;
+                inline constexpr uint16_t REPEZ_FLAG  = 0x0010;
+                inline constexpr uint16_t REPNEZ_FLAG = 0x0020;
 
-// SIB index
-static constexpr uint8_t SIB_INDEX_RAX = 0x00;
-static constexpr uint8_t SIB_INDEX_RCX = 0x01;
-static constexpr uint8_t SIB_INDEX_RBX = 0x02;
-static constexpr uint8_t SIB_INDEX_RDX = 0x03;
-static constexpr uint8_t SIB_INDEX_NONE  = 0x04;
-static constexpr uint8_t SIB_INDEX_RBP = 0x05;
-static constexpr uint8_t SIB_INDEX_RSI = 0x06;
-static constexpr uint8_t SIB_INDEX_RDI = 0x07;
+                // SEGMENT prefix flags (mutually exclusive)
+                inline constexpr uint16_t SEGMENT_OVERRIDE_CS_FLAG = 0x0040;
+                inline constexpr uint16_t SEGMENT_OVERRIDE_DS_FLAG = 0x0080; 
+                inline constexpr uint16_t SEGMENT_OVERRIDE_ES_FLAG = 0x0100;
+                inline constexpr uint16_t SEGMENT_OVERRIDE_FS_FLAG = 0x0200;
+                inline constexpr uint16_t SEGMENT_OVERRIDE_GS_FLAG = 0x0400; 
+                inline constexpr uint16_t SEGMENT_OVERRIDE_SS_FLAG = 0x0800;
+            }
+        }
 
-// SIB base
-static constexpr uint8_t SIB_BASE_RAX    = 0x00;
-static constexpr uint8_t SIB_BASE_RCX    = 0x01;
-static constexpr uint8_t SIB_BASE_RBX    = 0x02;
-static constexpr uint8_t SIB_BASE_RDX    = 0x03;
-static constexpr uint8_t SIB_BASE_RSP    = 0x04;
-static constexpr uint8_t SIB_NO_BASE_RBP = 0x05;
-static constexpr uint8_t SIB_BASE_RSI    = 0x06;
-static constexpr uint8_t SIB_BASE_RDI    = 0x07;
+        /**
+        * IR for nstruction operand types
+        *
+        * Operand:
+        *  S - SOurce
+        *  D - Destination
+        *
+        * Immediate:
+        *  IMM64 - 64-bit Immediate
+        *  IMM32 - 32-bit Immediate
+        *  IMM16 - 16-bit Immediate
+        *  IMM8  - 8-bit Immediate
+        *
+        * Memory:
+        *  MEM64 - 64-bit Memory Operand
+        *  MEM32 - 32-bit Memory Operand
+        *  MEM16 - 16-bit Memory Operand
+        *  MEM8  - 8-bit Memory Operand
+        *
+        * Register:
+        *  REG64 - 64-bit Register Operand
+        *  REG32 - 32-bit Register Operand
+        *  REG16 - 16-bit Register Operand
+        *  REG8  - 8-bit REgister Operand
+        *
+        *  IMM/MEM/REG V - Variable size (16/32/64 bits)
+        */
+        namespace OperandTypes {
+            /**Immediate/constants */
+            inline constexpr uint8_t IMM64 = 0x01;
+            inline constexpr uint8_t IMM32 = 0x02;
+            inline constexpr uint8_t IMM16 = 0x03;
+            inline constexpr uint8_t IMM8  = 0x04;
+            inline constexpr uint8_t IMMV  = 0x05;
+            
+            /**Memory operands */
+            inline constexpr uint8_t MEM64 = 0x06;
+            inline constexpr uint8_t MEM32 = 0x07;
+            inline constexpr uint8_t MEM16 = 0x08;
+            inline constexpr uint8_t MEM8  = 0x09;
+            inline constexpr uint8_t MEMV  = 0x0a;
 
+            /**CPU GPR (General Purpose Register) operands */
+            inline constexpr uint8_t REG64 = 0x0b;
+            inline constexpr uint8_t REG32 = 0x0c; 
+            inline constexpr uint8_t REG16 = 0x0d;
+            inline constexpr uint8_t REG8  = 0x0e;
+            inline constexpr uint8_t REGV  = 0x0f;
 
-/**
- * AMD64 encoding field flags
- * 
- * Flags:
- *  8 bits wide
- *  0000 0001 LEGACY_FLAG
- *  0000 0010 REX_FLAG
- *  0000 0100 ESC_FLAG
- *  0000 1000 OP_FLAG
- *  0001 0000 MODRM_FLAG
- *  0010 0000 SIB_FLAG
- *  0100 0000 DISP_FLAG
- *  1000 0000 IMM_FLAG
- */
-static constexpr uint8_t LEGACY_FLAG = 0x01;
-static constexpr uint8_t REX_FLAG    = 0x02;
-static constexpr uint8_t ESC_FLAG    = 0x04;
-static constexpr uint8_t OP_FLAG     = 0x08;
-static constexpr uint8_t MODRM_FLAG  = 0x10;
-static constexpr uint8_t SIB_FLAG    = 0x20;
-static constexpr uint8_t DISP_FLAG   = 0x40;
-static constexpr uint8_t IMM_FLAG    = 0x80;
+            inline constexpr std::unordered_map<std::string, uint8_t> REGISTERS = {
+                // 64-bit registers
+                {"rax", REG64},
+                {"rbx", REG64},
+                {"rcx", REG64},
+                {"rdx", REG64},
+                {"rdi", REG64},
+                {"rsi", REG64},
+                {"rbp", REG64},
+                {"rsp", REG64},
+                {"r8",  REG64},
+                {"r9",  REG64},
+                {"r10", REG64},
+                {"r11", REG64},
+                {"r12", REG64},
+                {"r13", REG64},
+                {"r14", REG64},
+                {"r15", REG64},
+
+                // 32-bit registers
+                {"eax", REG32},
+                {"ebx", REG32},
+                {"ecx", REG32},
+                {"edx", REG32},
+                {"edi", REG32},
+                {"esi", REG32},
+                {"ebp", REG32},
+                {"esp", REG32},
+                {"r8d",  REG32},
+                {"r9d",  REG32},
+                {"r10d", REG32},
+                {"r11d", REG32},
+                {"r12d", REG32},
+                {"r13d", REG32},
+                {"r14d", REG32},
+                {"r15d", REG32},
+
+                // 16-bit registers
+                {"ax", REG16},
+                {"bx", REG16},
+                {"cx", REG16},
+                {"dx", REG16},
+                {"di", REG16},
+                {"si", REG16},
+                {"bp", REG16},
+                {"sp", REG16},
+                {"r8w",  REG16},
+                {"r9w",  REG16},
+                {"r10w", REG16},
+                {"r11w", REG16},
+                {"r12w", REG16},
+                {"r13w", REG16},
+                {"r14w", REG16},
+                {"r15w", REG16},
+
+                // 8-bit registers
+                {"ah", REG8}, // ax upper 8 bits
+                {"bh", REG8}, // bx upper 8 bits
+                {"ch", REG8}, // cx upper 8 bits
+                {"dh", REG8}, // dx upper 8 bits
+                {"al", REG8}, // ax lower 8 bits
+                {"bl", REG8}, // bx lower 8 bits
+                {"cl", REG8}, // cx lower 8 bits
+                {"dl", REG8}, // dx lower 8 bits
+                {"dil", REG8},
+                {"sil", REG8},
+                {"bpl", REG8},
+                {"spl", REG8},
+                {"r8b",  REG8},
+                {"r9b",  REG8},
+                {"r10b", REG8},
+                {"r11b", REG8},
+                {"r12b", REG8},
+                {"r13b", REG8},
+                {"r14b", REG8},
+                {"r15b", REG8}
+            };
+        }
+    }
+}
+
+using namespace Bytes;
 
 /**
  * Primary structural representation of an amd64 instruction operation
  */
 struct Operation{
-    CpuInstruction cpu_instruction;
+    uint16_t operation;
     uint8_t operands[2]; // depending on instruction, operation can have 0-2 operands
 };
 
@@ -396,6 +468,8 @@ class LegacyInstruction{
         LegacyInstruction();
 
         ~LegacyInstruction();
+
+        uint16_t ToBigEndian(uint16_t word);
 
         void SetLegacyPrefix(uint8_t legacy_prefix_flags);
 
