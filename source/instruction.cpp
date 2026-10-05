@@ -7,6 +7,17 @@ LegacyInstruction::LegacyInstruction() :
     flags(0), legacy() {}, rex(0), escseq(0), op(0), modrm(0), sib(0), disp(0), imm(0){}
 
 /** 
+ * Identifies the register extension classification for REX
+ */
+uint8_t LegacyInstruction::RegisterExtension(uint8_t register){
+    if((register >> 4) & IR::OperandTypes::EXTENDED_GPR){
+        return IR::OperandTypes::EXTENDED_GPR;
+    }
+
+    return IR::OperandTypes::STANDARD_GPR;
+}
+
+/** 
  * COnverts a 16-bit unsigned integer to big endian byte order 
  */
 uint16_t LegacyInstruction::ToBigEndian(uint16_t word){

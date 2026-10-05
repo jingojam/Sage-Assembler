@@ -66,11 +66,11 @@ namespace Bytes {
             inline constexpr uint8_t SUB = 0x29;  // SUB Ev, Gv
 
             /** 1-Operand Arithmetic Ops */
-            inline constexpr uint8_t IMUL = 0x0faf; // 2-byte Near Multi-operand IMUL (0x0F 0xAF)
+            inline constexpr uint8_t IMUL = 0x0faf;
             inline constexpr uint8_t IDIV = 0xf7;
             inline constexpr uint8_t MUL  = 0xf7;
             inline constexpr uint8_t DIV  = 0xf7;
-            inline constexpr uint8_t INC  = 0xff;   // ModR/M form mandatory for AMD64 (uses /0 extension)
+            // inline constexpr uint8_t INC  = 0xff;   // ModR/M form mandatory for AMD64 (uses /0 extension)
 
             /** 2-Operand Bit Ops */
             inline constexpr uint8_t OR  = 0x09;  // OR Ev, Gv
@@ -78,12 +78,9 @@ namespace Bytes {
             inline constexpr uint8_t XOR = 0x31;  // XOR Ev, Gv
 
             /** 1-Operand Bit Ops */
-            inline constexpr uint8_t NOT = 0xf7;  // Uses /2 ModR/M extension
-            inline constexpr uint8_t NEG = 0xf7;  // Uses /3 ModR/M extension
-            // SHL
-            // SHR
-            // ROR
-            // ROL
+            // inline constexpr uint8_t NOT = 0xf7;  // Uses /2 ModR/M extension
+            // inline constexpr uint8_t NEG = 0xf7;  // Uses /3 ModR/M extension
+            // SHL, SHR, ROL, ROR
 
             /** Data Transfer */
             inline constexpr uint8_t PUSH_GPR = 0x50;   // Base for PUSH r64 (0x50 + reg_id)
@@ -95,55 +92,48 @@ namespace Bytes {
             /** Conditions */
             inline constexpr uint8_t CMP = 0x39;  // CMP Ev, Gv
 
-            /** Control Flow */
+            /** Functions */
             inline constexpr uint8_t CALL = 0xe8;  // CALL rel32
             inline constexpr uint8_t RET  = 0xc3;
 
             /** SHort Jumps (8-bit relative displacement) */
-            inline constexpr uint8_t JO   = 0x70; // Jump if Overflow (OF=1)
-            inline constexpr uint8_t JNO  = 0x71; // Jump if Not Overflow (OF=0)
-            inline constexpr uint8_t JB   = 0x72; // Jump if Below / Carry / Not Above or Equal (CF=1) -> Unsigned <
-            inline constexpr uint8_t JAE  = 0x73; // Jump if Above or Equal / Not Below / No Carry (CF=0) -> Unsigned >=
-            inline constexpr uint8_t JE   = 0x74; // Jump if Equal / Zero (ZF=1) -> ==
-            inline constexpr uint8_t JNE  = 0x75; // Jump if Not Equal / Not Zero (ZF=0) -> !=
-            inline constexpr uint8_t JBE  = 0x76; // Jump if Below or Equal / Not Above (CF=1 or ZF=1) -> Unsigned <=
-            inline constexpr uint8_t JA   = 0x77; // Jump if Above / Not Below or Equal (CF=0 and ZF=0) -> Unsigned >
-            inline constexpr uint8_t JS   = 0x78; // Jump if Sign / Negative (SF=1)
-            inline constexpr uint8_t JNS  = 0x79; // Jump if Not Sign / Positive (SF=0)
-            inline constexpr uint8_t JP   = 0x7a; // Jump if Parity / Parity Even (PF=1)
-            inline constexpr uint8_t JNP  = 0x7b; // Jump if Not Parity / Parity Odd (PF=0)
-            inline constexpr uint8_t JL   = 0x7c; // Jump if Less / Not Greater or Equal (SF != OF) -> Signed <
-            inline constexpr uint8_t JGE  = 0x7d; // Jump if Greater or Equal / Not Less (SF == OF) -> Signed >=
-            inline constexpr uint8_t JLE  = 0x7e; // Jump if Less or Equal / Not Greater (ZF=1 or SF != OF) -> Signed <=
-            inline constexpr uint8_t JG   = 0x7f; // Jump if Greater / Not Less or Equal (ZF=0 and SF == OF
+            inline constexpr uint8_t JE   = 0x74; // jump if ==
+            inline constexpr uint8_t JNE  = 0x75; // jump if !=
+            inline constexpr uint8_t JS   = 0x78; // jump if negative
+            inline constexpr uint8_t JNS  = 0x79; // jump if positive
+            inline constexpr uint8_t JL   = 0x7c; // jump if <
+            inline constexpr uint8_t JGE  = 0x7d; // jump if >=
+            inline constexpr uint8_t JLE  = 0x7e; // jump if <=
+            inline constexpr uint8_t JG   = 0x7f; // jump if >
 
             /** Near Jumps (32-bit relative displacement alternatives) */
-            inline constexpr uint16_t JO_NEAR  = 0x0f80;
-            inline constexpr uint16_t JNO_NEAR = 0x0f81;
-            inline constexpr uint16_t JB_NEAR  = 0x0f82;
-            inline constexpr uint16_t JAE_NEAR = 0x0f83;
-            inline constexpr uint16_t JE_NEAR  = 0x0f84;
-            inline constexpr uint16_t JNE_NEAR = 0x0f85;
-            inline constexpr uint16_t JBE_NEAR = 0x0f86;
-            inline constexpr uint16_t JA_NEAR  = 0x0f87;
-            inline constexpr uint16_t JS_NEAR  = 0x0f88;
-            inline constexpr uint16_t JNS_NEAR = 0x0f89;
-            inline constexpr uint16_t JP_NEAR  = 0x0f8a;
-            inline constexpr uint16_t JNP_NEAR = 0x0f8b;
-            inline constexpr uint16_t JL_NEAR  = 0x0f8c;
-            inline constexpr uint16_t JGE_NEAR = 0x0f8d;
-            inline constexpr uint16_t JLE_NEAR = 0x0f8e;
-            inline constexpr uint16_t JG_NEAR  = 0x0f8f;
+            inline constexpr uint16_t JE_NEAR  = 0x0f84; // jump if ==
+            inline constexpr uint16_t JNE_NEAR = 0x0f85; // jump if !=
+            inline constexpr uint16_t JS_NEAR  = 0x0f88  // jump if negative
+            inline constexpr uint16_t JNS_NEAR = 0x0f89  // jump of positive
+            inline constexpr uint16_t JL_NEAR  = 0x0f8c; // jump if <
+            inline constexpr uint16_t JGE_NEAR = 0x0f8d; // jump if >=
+            inline constexpr uint16_t JLE_NEAR = 0x0f8e; // jump if <=
+            inline constexpr uint16_t JG_NEAR  = 0x0f8f; // jump if >
 
             /** Syscall */
             inline constexpr uint16_t SYSCALL = 0x0f05;  // Native x86 instruction order (0x0F, 0x05)
         
-            inline static constexpr std::unordered_map<std::string, uint8_t> PRIMARY_OPCODE_MAP = {
+            inline constexpr std::unordered_map<std::string, uint8_t> PRIMARY_OPCODE_MAP = {
                 
             };
 
-            inline static constexpr std::unordered_map<std::string, uint16_t> SECONDARY_OPCODE_MAP = {
-                {"syscall", 0x0f05}
+            inline constexpr std::unordered_map<std::string, uint16_t> SECONDARY_OPCODE_MAP = {
+                {"syscall", SYSCALL},
+                {"je", JE_NEAR},
+                {"jne", JNE_NEAR},
+                {"js", JS_NEAR},
+                {"jns", JNS_NEAR},
+                {"jl", JL_NEAR},
+                {"jle", JLE_NEAR},
+                {"jg", JG_NEAR},
+                {"jge", JGE_NEAR},
+                {"", }
             };
         }
 
@@ -358,96 +348,92 @@ namespace Bytes {
             inline constexpr uint8_t REG8  = 0x0e;
             inline constexpr uint8_t REGV  = 0x0f;
 
+            /**GPR extended/standard */
+            inline constexpr uint8_t STANDARD_GPR = 0x00;
+            inline constexpr uint8_t EXTENDED_GPR = 0x01;
+
             inline constexpr std::unordered_map<std::string, uint8_t> REGISTERS = {
                 // 64-bit registers
-                {"rax", REG64},
-                {"rbx", REG64},
-                {"rcx", REG64},
-                {"rdx", REG64},
-                {"rdi", REG64},
-                {"rsi", REG64},
-                {"rbp", REG64},
-                {"rsp", REG64},
-                {"r8",  REG64},
-                {"r9",  REG64},
-                {"r10", REG64},
-                {"r11", REG64},
-                {"r12", REG64},
-                {"r13", REG64},
-                {"r14", REG64},
-                {"r15", REG64},
+                {"rax", (STANDARD_GPR << 4) | REG64},
+                {"rbx", (STANDARD_GPR << 4) | REG64},
+                {"rcx", (STANDARD_GPR << 4) | REG64},
+                {"rdx", (STANDARD_GPR << 4) | REG64},
+                {"rdi", (STANDARD_GPR << 4) | REG64},
+                {"rsi", (STANDARD_GPR << 4) | REG64},
+                {"rbp", (STANDARD_GPR << 4) | REG64},
+                {"rsp", (STANDARD_GPR << 4) | REG64},
+                {"r8",  (EXTENDED_GPR << 4) | REG64},
+                {"r9",  (EXTENDED_GPR << 4) | REG64},
+                {"r10", (EXTENDED_GPR << 4) | REG64},
+                {"r11", (EXTENDED_GPR << 4) | REG64},
+                {"r12", (EXTENDED_GPR << 4) | REG64},
+                {"r13", (EXTENDED_GPR << 4) | REG64},
+                {"r14", (EXTENDED_GPR << 4) | REG64},
+                {"r15", (EXTENDED_GPR << 4) | REG64},
 
                 // 32-bit registers
-                {"eax", REG32},
-                {"ebx", REG32},
-                {"ecx", REG32},
-                {"edx", REG32},
-                {"edi", REG32},
-                {"esi", REG32},
-                {"ebp", REG32},
-                {"esp", REG32},
-                {"r8d",  REG32},
-                {"r9d",  REG32},
-                {"r10d", REG32},
-                {"r11d", REG32},
-                {"r12d", REG32},
-                {"r13d", REG32},
-                {"r14d", REG32},
-                {"r15d", REG32},
+                {"eax", (STANDARD_GPR << 4) | REG32},
+                {"ebx", (STANDARD_GPR << 4) | REG32},
+                {"ecx", (STANDARD_GPR << 4) | REG32},
+                {"edx", (STANDARD_GPR << 4) | REG32},
+                {"edi", (STANDARD_GPR << 4) | REG32},
+                {"esi", (STANDARD_GPR << 4) | REG32},
+                {"ebp", (STANDARD_GPR << 4) | REG32},
+                {"esp", (STANDARD_GPR << 4) | REG32},
+                {"r8d", (EXTENDED_GPR << 4) | REG32},
+                {"r9d", (EXTENDED_GPR << 4) | REG32},
+                {"r10d", (EXTENDED_GPR << 4) | REG32},
+                {"r11d", (EXTENDED_GPR << 4) | REG32},
+                {"r12d", (EXTENDED_GPR << 4) | REG32},
+                {"r13d", (EXTENDED_GPR << 4) | REG32},
+                {"r14d", (EXTENDED_GPR << 4) | REG32},
+                {"r15d", (EXTENDED_GPR << 4) | REG32},
 
                 // 16-bit registers
-                {"ax", REG16},
-                {"bx", REG16},
-                {"cx", REG16},
-                {"dx", REG16},
-                {"di", REG16},
-                {"si", REG16},
-                {"bp", REG16},
-                {"sp", REG16},
-                {"r8w",  REG16},
-                {"r9w",  REG16},
-                {"r10w", REG16},
-                {"r11w", REG16},
-                {"r12w", REG16},
-                {"r13w", REG16},
-                {"r14w", REG16},
-                {"r15w", REG16},
+                {"ax", (STANDARD_GPR << 4) | REG16},
+                {"bx", (STANDARD_GPR << 4) | REG16},
+                {"cx", (STANDARD_GPR << 4) | REG16},
+                {"dx", (STANDARD_GPR << 4) | REG16},
+                {"di", (STANDARD_GPR << 4) | REG16},
+                {"si", (STANDARD_GPR << 4) | REG16},
+                {"bp", (STANDARD_GPR << 4) | REG16},
+                {"sp", (STANDARD_GPR << 4) | REG16},
+                {"r8w", (EXTENDED_GPR << 4) | REG16},
+                {"r9w", (EXTENDED_GPR << 4) | REG16},
+                {"r10w", (EXTENDED_GPR << 4) | REG16},
+                {"r11w", (EXTENDED_GPR << 4) | REG16},
+                {"r12w", (EXTENDED_GPR << 4) | REG16},
+                {"r13w", (EXTENDED_GPR << 4) | REG16},
+                {"r14w", (EXTENDED_GPR << 4) | REG16},
+                {"r15w", (EXTENDED_GPR << 4) | REG16},
 
                 // 8-bit registers
-                {"ah", REG8}, // ax upper 8 bits
-                {"bh", REG8}, // bx upper 8 bits
-                {"ch", REG8}, // cx upper 8 bits
-                {"dh", REG8}, // dx upper 8 bits
-                {"al", REG8}, // ax lower 8 bits
-                {"bl", REG8}, // bx lower 8 bits
-                {"cl", REG8}, // cx lower 8 bits
-                {"dl", REG8}, // dx lower 8 bits
-                {"dil", REG8},
-                {"sil", REG8},
-                {"bpl", REG8},
-                {"spl", REG8},
-                {"r8b",  REG8},
-                {"r9b",  REG8},
-                {"r10b", REG8},
-                {"r11b", REG8},
-                {"r12b", REG8},
-                {"r13b", REG8},
-                {"r14b", REG8},
-                {"r15b", REG8}
+                {"ah", (STANDARD_GPR << 4) | REG8}, // ax upper 8 bits
+                {"bh", (STANDARD_GPR << 4) | REG8}, // bx upper 8 bits
+                {"ch", (STANDARD_GPR << 4) | REG8}, // cx upper 8 bits
+                {"dh", (STANDARD_GPR << 4) | REG8}, // dx upper 8 bits
+                {"al", (STANDARD_GPR << 4) | REG8}, // ax lower 8 bits
+                {"bl", (STANDARD_GPR << 4) | REG8}, // bx lower 8 bits
+                {"cl", (STANDARD_GPR << 4) | REG8}, // cx lower 8 bits
+                {"dl", (STANDARD_GPR << 4) | REG8}, // dx lower 8 bits
+                {"dil", (EXTENDED_GPR << 4) | REG8},
+                {"sil", (EXTENDED_GPR << 4) | REG8},
+                {"bpl", (EXTENDED_GPR << 4) | REG8},
+                {"spl", (EXTENDED_GPR << 4) | REG8},
+                {"r8b",  (EXTENDED_GPR << 4) | REG8},
+                {"r9b",  (EXTENDED_GPR << 4) | REG8},
+                {"r10b", (EXTENDED_GPR << 4) | REG8},
+                {"r11b", (EXTENDED_GPR << 4) | REG8},
+                {"r12b", (EXTENDED_GPR << 4) | REG8},
+                {"r13b", (EXTENDED_GPR << 4) | REG8},
+                {"r14b", (EXTENDED_GPR << 4) | REG8},
+                {"r15b", (EXTENDED_GPR << 4) | REG8}
             };
         }
     }
 }
 
 using namespace Bytes;
-
-/**
- * Primary structural representation of an amd64 instruction operation
- */
-struct Operation{
-    uint16_t operation;
-    uint8_t operands[2]; // depending on instruction, operation can have 0-2 operands
-};
 
 /** 
  * Legacy x86_64 instruction encoding fields
@@ -468,6 +454,8 @@ class LegacyInstruction{
         LegacyInstruction();
 
         ~LegacyInstruction();
+
+        uint8_t RegisterExtension(uint8_t register);
 
         uint16_t ToBigEndian(uint16_t word);
 
@@ -490,6 +478,8 @@ class LegacyInstruction{
         void SetFlags(uint8_t flags);
 
         uint8_t GetFlags();
+
+        void ToBytestream(std::vector<uint8_t>& bytes);
 };
 
 #endif

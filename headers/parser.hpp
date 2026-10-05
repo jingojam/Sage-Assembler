@@ -12,16 +12,14 @@
 #include <typeinfo>
 #include "instruction.hpp"
 
-// v.1
+// v.2
 
 /**
  * Reference: AMD64 Technology, AMD64 Architecture Programmer's Manual Volumes 1-5
  * Publication No. 40332, Revision 1.0, July 2026
  */
 
-static const uint8_t NO_OPERAND          = 1;
-static const uint8_t DESTINATION_OPERAND = 2;
-static const uint8_t SOURCE_OPERAND      = 3;
+using namespace Bytes;
 
  /**
   * Immediate Representation of parsed assembly instructions
@@ -31,11 +29,8 @@ static const uint8_t SOURCE_OPERAND      = 3;
   *     No operand for instructions like CALL/SYSCALL/RET/etc.
   *     1 operand for arithmetic INC/DEC/MUL/etc.
   *     2 operands for ADD/SUB/MOV/etc.
-  *     
-  *     1st index is the destination operand (for double-token instructions)
-  *     2nd index is the source operand
   *
-  * - Optional immediate field
+  * - Optional immediate field, required if immediates are parsed.
   */
 struct Instruction{
     uint8_t flag;
